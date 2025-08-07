@@ -38,15 +38,25 @@ public class RedisCommandHandler
         int startIdx = int.Parse(arguments[1]);
         int endIdx = int.Parse(arguments[2]);
 
-        if(!store.ContainsKey(key) || startIdx > endIdx)
+        if (!store.ContainsKey(key))
             return "*0\r\n";
 
         var value = store[key];
-        if(startIdx >= value.ListValue!.Count)
-            return "*0\r\n";
 
-        if (endIdx >= value.ListValue.Count)
+        if (startIdx < 0)
+            startIdx = value.ListValue!.Count + startIdx;
+
+        if(endIdx < 0)
+            endIdx = value.ListValue!.Count + endIdx;
+
+        startIdx = Math.Max(0, startIdx);
+        endIdx = Math.Max(0, endIdx);
+
+        if (endIdx >= value.ListValue!.Count)
             endIdx = value.ListValue.Count - 1;
+
+        if (startIdx >= value.ListValue!.Count || startIdx > endIdx)
+            return "*0\r\n";
 
         var result = new StringBuilder();
         result.Append($"*{endIdx - startIdx + 1}\r\n");
