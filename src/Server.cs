@@ -28,7 +28,7 @@ while (true)
             }
 
             string request = Encoding.UTF8.GetString(buffer);
-            Console.WriteLine($"Recived: {request}");
+            Console.WriteLine($"Recived: {request} tmp");
 
             client.Send(Encoding.UTF8.GetBytes("+PONG\r\n"));
         }
