@@ -19,6 +19,8 @@ while (true)
 
 void HandleClient(Socket client)
 {
+    Dictionary<string, string> store = new();
+
     // Handle a client in a loop to process multiple requests
     while (client.Connected)
     {
@@ -34,25 +36,42 @@ void HandleClient(Socket client)
 
         string request = Encoding.UTF8.GetString(buffer , 0 , bytesReaded);
         
-        string response = ParseRedisCommand(request);
+        string response = ParseRedisCommand(request, store);
 
         client.Send(Encoding.UTF8.GetBytes(response));
     }
 }
 
-string ParseRedisCommand(string request)
+string ParseRedisCommand(string request, Dictionary<string , string> store)
 {
-    var requestParts = request.Split("\r\n" , StringSplitOptions.RemoveEmptyEntries);
+    string separator = "\r\n";
 
-    if (requestParts[2] == "PING")
-        return "+PONG\r\n";
-    else if(requestParts[2].ToLower() == "echo")
-        return $"${requestParts[4].Length}\r\n{requestParts[4]}\r\n";
-    else
-        return "error";
+    var commandParts = request.Split(separator , StringSplitOptions.RemoveEmptyEntries);
+
+    var commandName = commandParts[2].ToUpper();
+    var commandArguments = commandParts.Where(
+        (value, i) => i >= 4 && i % 2 == 0
+    ).ToArray();
+
+
+    switch (commandName)
+    {
+        case "PING":
+            return $"+PONG{separator}";
+        case "ECHO":
+            return $"${commandArguments[0].Length}{separator}{commandArguments[0]}{separator}";
+        case "SET":
+            store.Add(commandArguments[0], commandArguments[1]);
+            return $"+OK{separator}";
+        case "GET":
+            string? value = store.GetValueOrDefault(commandArguments[0]);
+
+            if (value is not null)
+                return $"${value.Length}{separator}{value}{separator}";
+            else
+                return $"$-1{separator}";
+        default:
+            return "-ERR unknown command\r\n";
+    }
 }
 
-/*
-    PING
-    *1\r\n$4\r\nPING\r\n
- */
