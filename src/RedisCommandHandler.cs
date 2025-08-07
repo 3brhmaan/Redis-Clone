@@ -28,6 +28,7 @@ public class RedisCommandHandler
             "GET" => HandleGet(commandArguments),
             "RPUSH" => HandleRpush(commandArguments),
             "LRANGE" => HandleLrange(commandArguments),
+            "LPUSH" => HandleLpush(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
     }
@@ -67,7 +68,7 @@ public class RedisCommandHandler
         return result.ToString();
     }
 
-    private string HandleRpush(string[] arguments)
+    private string HandlePush(string[] arguments , Action<RedisValue , List<string>> action)
     {
         var key = arguments[0];
         var values = arguments.Skip(1).ToList();
@@ -79,10 +80,25 @@ public class RedisCommandHandler
         else
             redisValue = store[key];
 
-        redisValue!.ListValue!.AddRange(values);
+        action(redisValue , values);
+
         store[key] = redisValue;
 
         return $":{store[key]!.ListValue!.Count}\r\n";
+    }
+
+    private string HandleLpush(string[] arguments)
+    {
+        return HandlePush(arguments , (redisValue , values) =>
+        {
+            foreach (var e in values)
+                redisValue.ListValue.Insert(0 , e);
+        });
+    }
+
+    private string HandleRpush(string[] arguments)
+    {
+        return HandlePush(arguments, (redisValue, values) => redisValue!.ListValue!.AddRange(values));
     }
 
     private string[] ParseRespRequest(string request)
