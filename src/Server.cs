@@ -33,8 +33,26 @@ void HandleClient(Socket client)
         }
 
         string request = Encoding.UTF8.GetString(buffer , 0 , bytesReaded);
-        Console.WriteLine($"Recived: {request}");
+        
+        string response = ParseRedisCommand(request);
 
-        client.Send(Encoding.UTF8.GetBytes("+PONG\r\n"));
+        client.Send(Encoding.UTF8.GetBytes(response));
     }
 }
+
+string ParseRedisCommand(string request)
+{
+    var requestParts = request.Split("\r\n" , StringSplitOptions.RemoveEmptyEntries);
+
+    if (requestParts[2] == "PING")
+        return "+PONG\r\n";
+    else if(requestParts[2].ToLower() == "echo")
+        return $"${requestParts[4].Length}\r\n{requestParts[4]}\r\n";
+    else
+        return "error";
+}
+
+/*
+    PING
+    *1\r\n$4\r\nPING\r\n
+ */
