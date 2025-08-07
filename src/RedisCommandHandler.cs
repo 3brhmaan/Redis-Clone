@@ -45,11 +45,11 @@ public class RedisCommandHandler
         {
             redisValue = store[key];
             redisValue!.ListValue!.Add(value);
-
-            store[key] = redisValue;
         }
 
-        return $":{redisValue.ListValue.Count}\r\n";
+        store[key] = redisValue;
+
+        return $":{store[key]!.ListValue!.Count}\r\n";
     }
 
     private string[] ParseRespRequest(string request)
