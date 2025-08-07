@@ -1,4 +1,6 @@
-﻿namespace codecrafters_redis.src;
+﻿using System.Text;
+
+namespace codecrafters_redis.src;
 
 public class RedisCommandHandler
 {
@@ -25,8 +27,34 @@ public class RedisCommandHandler
             "SET" => HandleSet(commandArguments),
             "GET" => HandleGet(commandArguments),
             "RPUSH" => HandleRpush(commandArguments),
+            "LRANGE" => HandleLrange(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
+    }
+
+    private string HandleLrange(string[] arguments)
+    {
+        string key = arguments[0];
+        int startIdx = int.Parse(arguments[1]);
+        int endIdx = int.Parse(arguments[2]);
+
+        if(!store.ContainsKey(key) || startIdx > endIdx)
+            return "*0\r\n";
+
+        var value = store[key];
+        if(startIdx >= value.ListValue!.Count)
+            return "*0\r\n";
+
+        if (endIdx >= value.ListValue.Count)
+            endIdx = value.ListValue.Count - 1;
+
+        var result = new StringBuilder();
+        result.Append($"*{endIdx - startIdx + 1}\r\n");
+
+        for(int i=startIdx; i<=endIdx; i++)
+            result.Append($"${value.ListValue[i].Length}\r\n{value.ListValue[i]}\r\n");
+
+        return result.ToString();
     }
 
     private string HandleRpush(string[] arguments)
