@@ -32,21 +32,16 @@ public class RedisCommandHandler
     private string HandleRpush(string[] arguments)
     {
         var key = arguments[0];
-        var value = arguments[1];
+        var values = arguments.Skip(1).ToList();
 
         var redisValue = new RedisValue();
 
         if (!store.ContainsKey(key))
-        {
             redisValue.ListValue = new();
-            redisValue.ListValue.Add(value);
-        }
         else
-        {
             redisValue = store[key];
-            redisValue!.ListValue!.Add(value);
-        }
 
+        redisValue!.ListValue!.AddRange(values);
         store[key] = redisValue;
 
         return $":{store[key]!.ListValue!.Count}\r\n";
