@@ -24,8 +24,32 @@ public class RedisCommandHandler
             "ECHO" => HandleEcho(commandArguments),
             "SET" => HandleSet(commandArguments),
             "GET" => HandleGet(commandArguments),
+            "RPUSH" => HandleRpush(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
+    }
+
+    private string HandleRpush(string[] arguments)
+    {
+        var key = arguments[0];
+        var value = arguments[1];
+
+        var redisValue = new RedisValue();
+
+        if (!store.ContainsKey(key))
+        {
+            redisValue.ListValue = new();
+            redisValue.ListValue.Add(value);
+        }
+        else
+        {
+            redisValue = store[key];
+            redisValue!.ListValue!.Add(value);
+
+            store[key] = redisValue;
+        }
+
+        return $":{redisValue.ListValue.Count}\r\n";
     }
 
     private string[] ParseRespRequest(string request)
@@ -59,7 +83,7 @@ public class RedisCommandHandler
         // Handle expiration (PX option)
         if (arguments.Length > 2 && arguments[2].ToLower() == "px")
         {
-            Console.WriteLine($"MilliSecond: {arguments[3]}");
+            //Console.WriteLine($"MilliSecond: {arguments[3]}");
             if (int.TryParse(arguments[3] , out int milliseconds))
             {
                 redisValue.Expiry = DateTime.UtcNow.AddMilliseconds(milliseconds);
@@ -88,6 +112,6 @@ public class RedisCommandHandler
             return "$-1\r\n";
         }
 
-        return $"${redisValue.Value.Length}\r\n{redisValue.Value}\r\n";
+        return $"${redisValue.StringValue.Length}\r\n{redisValue.StringValue}\r\n";
     }
 }
