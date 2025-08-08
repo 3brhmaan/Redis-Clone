@@ -49,7 +49,12 @@ public class RedisCommandHandler
     {
         var idParts = id.Split('-');
 
-        if (idParts[0] == "0" && idParts[1] == "0")
+        if (idParts[1] == "*")
+        {
+            resultMessage = "";
+            return true;
+        }
+        else if (idParts[0] == "0" && idParts[1] == "0")
         {
             resultMessage = "The ID specified in XADD must be greater than 0-0";
             return false;
@@ -84,6 +89,33 @@ public class RedisCommandHandler
         }
     }
 
+    private string GenerateStreamEntryId(string id , RedisValue value)
+    {
+        var idParts = id.Split("-");
+
+        if (idParts[1] != "*")
+            return id;
+
+        if (value.StramValue?.Count == 0)
+        {
+            idParts[1] = idParts[0] != "0" ? "0" : "1";
+        }
+        else
+        {
+            var lastIdParts = value.StramValue[^1].Id.Split("-");
+            if (idParts[0] == lastIdParts[0])
+            {
+                idParts[1] = (int.Parse(lastIdParts[1]) + 1).ToString();
+            }
+            else
+            {
+                idParts[1] = "0";
+            }
+        }
+
+        return string.Join("-" , idParts);
+    }
+
     private string HandleXADD(string[] arguments)
     {
         var key = arguments[0];
@@ -99,6 +131,8 @@ public class RedisCommandHandler
             value = new RedisValue(key);
             value.StramValue = new();
         }
+
+        id = GenerateStreamEntryId(id , value);
 
 
         var streamEntry = new RedisStreamEntry { Id = id };
