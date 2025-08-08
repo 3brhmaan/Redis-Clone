@@ -1,48 +1,13 @@
 using codecrafters_redis.src;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
-
-TcpListener server = new TcpListener(IPAddress.Any , 6379);
-server.Start();
 
 
-while (true)
+var redisServer = new RedisServer(6379);
+
+try
 {
-    var client = server.AcceptSocket(); // wait for client
-
-    var task = Task.Run(() => HandleClient(client));
+    redisServer.Start();
 }
-
-
-void HandleClient(Socket client)
+catch (Exception ex)
 {
-    Dictionary<string, RedisValue> store = new();
-    var commandHandler = new RedisCommandHandler(store);
-
-
-    // Handle a client in a loop to process multiple requests
-    while (client.Connected)
-    {
-        byte[] buffer = new byte[1024];
-
-        int bytesReaded = client.Receive(buffer);
-
-        // check if connection was closed
-        if (bytesReaded == 0)
-        {
-            break; // client disconneted
-        }
-
-        string request = Encoding.UTF8.GetString(buffer , 0 , bytesReaded);
-        
-        string response = commandHandler.ParseRedisCommand(request);
-
-        client.Send(Encoding.UTF8.GetBytes(response));
-    }
+    Console.WriteLine($"Server error: {ex.Message}");
 }
-
-
