@@ -29,8 +29,19 @@ public class RedisCommandHandler
             "RPUSH" => HandleRpush(commandArguments),
             "LRANGE" => HandleLrange(commandArguments),
             "LPUSH" => HandleLpush(commandArguments),
+            "LLEN" => HandleLen(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
+    }
+
+    private string HandleLen(string[] arguments)
+    {
+        string key = arguments[0];
+
+        if(!store.ContainsKey(key))
+            return ":0\r\n";
+
+        return $":{store[key].ListValue?.Count}\r\n";
     }
 
     private string HandleLrange(string[] arguments)
