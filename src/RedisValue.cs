@@ -5,11 +5,11 @@ public class RedisValue
     {
         get
         {
-            if(StramValue is not null)
+            if (StramValue is not null)
                 return "stream";
-            else if(StringValue is not null)
+            else if (StringValue is not null)
                 return "string";
-            else 
+            else
                 return "list";
         }
     }
