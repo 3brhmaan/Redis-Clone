@@ -7,7 +7,7 @@ namespace codecrafters_redis.src;
 public class RedisCommandHandler
 {
     private readonly ConcurrentDictionary<string , RedisValue> store;
-    private readonly Dictionary<string , object> keyLocks;
+    private readonly ConcurrentDictionary<string , object> keyLocks;
 
     public RedisCommandHandler()
     {
@@ -44,18 +44,28 @@ public class RedisCommandHandler
 
     private object GetKeyLock(string key)
     {
-        lock (this)
-        {
-            if(!keyLocks.ContainsKey(key))
-                keyLocks[key] = new object();
+        return keyLocks.GetOrAdd(key, () => new object());
+    }
 
-            return keyLocks[key];
+    private bool WaitWithOptionalTimeout(object lockObj , double timeoutSeconds)
+    {
+        if (timeoutSeconds == 0)
+        {
+            Monitor.Wait(lockObj);
+            return true;
+        }
+        else
+        {
+            bool wasPulsed = Monitor.Wait(lockObj , TimeSpan.FromSeconds(timeoutSeconds));
+            return wasPulsed;
         }
     }
 
     private string HandleBLPOP(string[] arguments)
     {
         var key = arguments[0];
+        double timeoutSeconds = double.Parse(arguments[1]);
+
         var keyLock = GetKeyLock(key);
 
         Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Before Lock");
@@ -64,11 +74,16 @@ public class RedisCommandHandler
         {
             Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Lock & Before Checking If Key Exist");
 
-            // sleep untill the key is available
+            // sleep untill the key is available or timeout has elapsed
             while (!store.ContainsKey(key) || store[key].ListValue?.Count == 0)
             {
                 Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Will Sleep Soon");
-                Monitor.Wait(keyLock);
+
+                bool wasPulsed = WaitWithOptionalTimeout(keyLock, timeoutSeconds);
+                Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Waked up and '{wasPulsed}' pulsed ?");
+
+                if(!wasPulsed)
+                    return "$-1\r\n";
             }
 
             Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Waking Up");
