@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Text;
 
 namespace codecrafters_redis.src;
@@ -44,24 +45,72 @@ public class RedisCommandHandler
         };
     }
 
+    private bool ValidateStremEntryId(string id , string key , out string resultMessage)
+    {
+        var idParts = id.Split('-');
+
+        if (idParts[0] == "0" && idParts[1] == "0")
+        {
+            resultMessage = "The ID specified in XADD must be greater than 0-0";
+            return false;
+        }
+        else
+        {
+            if (store.TryGetValue(key , out var value))
+            {
+                var lastIdParts = value.StramValue[^1].Id.Split('-');
+
+                if (string.Compare(idParts[0] , lastIdParts[0]) > 0)
+                {
+                    resultMessage = "";
+                    return true;
+                }
+                else if (idParts[0] == lastIdParts[0] && string.Compare(idParts[1] , lastIdParts[1]) > 0)
+                {
+                    resultMessage = "";
+                    return true;
+                }
+                else
+                {
+                    resultMessage = "The ID specified in XADD is equal or smaller than the target stream top item";
+                    return false;
+                }
+            }
+            else
+            {
+                resultMessage = "";
+                return true;
+            }
+        }
+    }
+
     private string HandleXADD(string[] arguments)
     {
         var key = arguments[0];
         var id = arguments[1];
 
+        if (!ValidateStremEntryId(id , key , out var resultMessage))
+        {
+            return $"-ERR {resultMessage}\r\n";
+        }
+
         if (!store.TryGetValue(key , out var value))
         {
             value = new RedisValue(key);
-            value.StramValue = new() { Id = id };
+            value.StramValue = new();
         }
 
-        for(int i=2 ; i<arguments.Length ; i+=2)
+
+        var streamEntry = new RedisStreamEntry { Id = id };
+
+        for (int i = 2 ; i < arguments.Length ; i += 2)
         {
-            value.StramValue?.KeyValuePairs.Add(arguments[i], arguments[i+1]);
+            streamEntry.KeyValuePairs.Add(arguments[i] , arguments[i + 1]);
         }
+
+        value.StramValue?.Add(streamEntry);
 
         store[key] = value;
-        Console.WriteLine($"Type: {store[key].ValueType}");
 
         return $"${id.Length}\r\n{id}\r\n";
     }

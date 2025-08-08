@@ -30,23 +30,30 @@ public class RedisServer
 
     private void HandleClient(Socket client)
     {
-        while (client.Connected)
+        try
         {
-            byte[] buffer = new byte[1024];
-            int bytesRead = client.Receive(buffer);
-
-            // Check if connection was closed
-            if (bytesRead == 0)
+            while (client.Connected)
             {
-                break; // Client disconnected
+                byte[] buffer = new byte[1024];
+                int bytesRead = client.Receive(buffer);
+
+                // Check if connection was closed
+                if (bytesRead == 0)
+                {
+                    break; // Client disconnected
+                }
+
+                string request = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
+                string response = commandHandler.ParseRedisCommand(request);
+
+                client.Send(Encoding.UTF8.GetBytes(response));
             }
 
-            string request = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
-            string response = commandHandler.ParseRedisCommand(request);
-
-            client.Send(Encoding.UTF8.GetBytes(response));
+            client.Close();
         }
-
-        client.Close();
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
     }
 }

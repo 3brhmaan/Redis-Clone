@@ -14,7 +14,7 @@ public class RedisValue
         }
     }
 
-    public RedisStreamEntry? StramValue { get; set; } = null;
+    public List<RedisStreamEntry>? StramValue { get; set; } = null;
     public string? StringValue { get; set; } = null;
     public List<string>? ListValue { get; set; } = null;
     public DateTime? Expiry { get; set; } = null;
