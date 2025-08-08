@@ -22,19 +22,36 @@ public class RedisCommandHandler
 
         return commandName switch
         {
-            "PING" => HandlePing(),
-            "ECHO" => HandleEcho(commandArguments),
-            "SET" => HandleSet(commandArguments),
-            "GET" => HandleGet(commandArguments),
-            "RPUSH" => HandleRpush(commandArguments),
-            "LRANGE" => HandleLrange(commandArguments),
-            "LPUSH" => HandleLpush(commandArguments),
-            "LLEN" => HandleLen(commandArguments),
+            "PING" => HandlePING(),
+            "ECHO" => HandleECHO(commandArguments),
+            "SET" => HandleSET(commandArguments),
+            "GET" => HandleGET(commandArguments),
+            "RPUSH" => HandleRPUSH(commandArguments),
+            "LPUSH" => HandleLPUSH(commandArguments),
+            "LRANGE" => HandleLRANGE(commandArguments),
+            "LLEN" => HandleLEN(commandArguments),
+            "LPOP" => HandleLPOP(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
     }
 
-    private string HandleLen(string[] arguments)
+    private string HandleLPOP(string[] arguments)
+    {
+        string key = arguments[0];
+        if(!store.ContainsKey(key))
+            return "$-1\r\n";
+
+        var value = store[key];
+        if(value.ListValue is null ||  value.ListValue.Count == 0)
+            return "$-1\r\n";
+
+        var firstElement = value.ListValue[0];
+        value.ListValue.RemoveAt(0);
+
+        return $"${firstElement.Length}\r\n{firstElement}\r\n";
+    }
+
+    private string HandleLEN(string[] arguments)
     {
         string key = arguments[0];
 
@@ -44,7 +61,7 @@ public class RedisCommandHandler
         return $":{store[key].ListValue?.Count}\r\n";
     }
 
-    private string HandleLrange(string[] arguments)
+    private string HandleLRANGE(string[] arguments)
     {
         string key = arguments[0];
         int startIdx = int.Parse(arguments[1]);
@@ -79,7 +96,7 @@ public class RedisCommandHandler
         return result.ToString();
     }
 
-    private string HandlePush(string[] arguments , Action<RedisValue , List<string>> action)
+    private string HandleGeneralPush(string[] arguments , Action<RedisValue , List<string>> action)
     {
         var key = arguments[0];
         var values = arguments.Skip(1).ToList();
@@ -98,42 +115,32 @@ public class RedisCommandHandler
         return $":{store[key]!.ListValue!.Count}\r\n";
     }
 
-    private string HandleLpush(string[] arguments)
+    private string HandleLPUSH(string[] arguments)
     {
-        return HandlePush(arguments , (redisValue , values) =>
+        return HandleGeneralPush(arguments , (redisValue , values) =>
         {
             foreach (var e in values)
                 redisValue.ListValue.Insert(0 , e);
         });
     }
 
-    private string HandleRpush(string[] arguments)
+    private string HandleRPUSH(string[] arguments)
     {
-        return HandlePush(arguments, (redisValue, values) => redisValue!.ListValue!.AddRange(values));
+        return HandleGeneralPush(arguments, (redisValue, values) => redisValue!.ListValue!.AddRange(values));
     }
 
-    private string[] ParseRespRequest(string request)
-    {
-        var result = request
-            .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
-            .Where((value) => !value.StartsWith('*') && !value.StartsWith('$'))
-            .ToArray();
-
-        return result;
-    }
-
-    private string HandlePing()
+    private string HandlePING()
     {
         return "+PONG\r\n";
     }
 
-    private string HandleEcho(string[] arguments)
+    private string HandleECHO(string[] arguments)
     {
         string message = arguments[0];
         return $"+{message}\r\n";
     }
 
-    private string HandleSet(string[] arguments)
+    private string HandleSET(string[] arguments)
     {
         string key = arguments[0];
         string value = arguments[1];
@@ -155,7 +162,7 @@ public class RedisCommandHandler
         return "+OK\r\n";
     }
 
-    private string HandleGet(string[] arguments)
+    private string HandleGET(string[] arguments)
     {
         string key = arguments[0];
 
@@ -173,5 +180,15 @@ public class RedisCommandHandler
         }
 
         return $"${redisValue.StringValue.Length}\r\n{redisValue.StringValue}\r\n";
+    }
+
+    private string[] ParseRespRequest(string request)
+    {
+        var result = request
+            .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
+            .Where((value) => !value.StartsWith('*') && !value.StartsWith('$'))
+            .ToArray();
+
+        return result;
     }
 }
