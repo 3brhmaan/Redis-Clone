@@ -38,8 +38,18 @@ public class RedisCommandHandler
             "LLEN" => HandleLEN(commandArguments),
             "LPOP" => HandleLPOP(commandArguments),
             "BLPOP" => HandleBLPOP(commandArguments),
+            "TYPE" => HandleTYPE(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
+    }
+
+    private string HandleTYPE(string[] arguments)
+    {
+        var key = arguments[0];
+        if(!store.ContainsKey(key))
+            return "+none\r\n";
+        else
+            return "+string\r\n";
     }
 
     private object GetKeyLock(string key)
@@ -68,25 +78,25 @@ public class RedisCommandHandler
 
         var keyLock = GetKeyLock(key);
 
-        Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Before Lock");
+        //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Before Lock");
 
         lock (keyLock)
         {
-            Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Lock & Before Checking If Key Exist");
+            //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Lock & Before Checking If Key Exist");
 
             // sleep untill the key is available or timeout has elapsed
             while (!store.ContainsKey(key) || store[key].ListValue?.Count == 0)
             {
-                Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Will Sleep Soon");
+                //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Will Sleep Soon");
 
                 bool wasPulsed = WaitWithOptionalTimeout(keyLock, timeoutSeconds);
-                Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Waked up and '{wasPulsed}' pulsed ?");
+                //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Waked up and '{wasPulsed}' pulsed ?");
 
                 if(!wasPulsed)
                     return "$-1\r\n";
             }
 
-            Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Waking Up");
+            //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Waking Up");
 
             var returnedValue = store[key].ListValue[0];
             store[key].ListValue?.RemoveAt(0);
@@ -176,11 +186,11 @@ public class RedisCommandHandler
 
         var redisValue = new RedisValue();
 
-        Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Lock");
+        //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Lock");
         var keyLock = GetKeyLock(key);
         lock (keyLock)
         {
-            Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Lock");
+            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Lock");
 
             if (!store.ContainsKey(key))
                 redisValue.ListValue = new();
@@ -191,12 +201,12 @@ public class RedisCommandHandler
 
             store[key] = redisValue;
 
-            Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Waking Up All Threads");
+            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Waking Up All Threads");
 
             // wake only threads waiting for this key
             Monitor.PulseAll(keyLock);
 
-            Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Waking Up All Threads");
+            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Waking Up All Threads");
 
 
             return $":{store[key]!.ListValue!.Count}\r\n";
@@ -245,7 +255,6 @@ public class RedisCommandHandler
             }
         }
 
-        Console.WriteLine($"{key} : {value}");
         store[key] = redisValue;
         return "+OK\r\n";
     }
@@ -280,14 +289,3 @@ public class RedisCommandHandler
         return result;
     }
 }
-
-
-// When BLPOP is called:
-// 1. Check if list has elements
-// 2. If yes → pop and return immediately
-// 3. If no → add client to waiting queue for that list
-
-// When RPUSH/LPUSH is called:
-// 1. Add element to list
-// 2. Check if any clients are waiting for this list
-// 3. If yes → wake up the longest-waiting client and give them the element

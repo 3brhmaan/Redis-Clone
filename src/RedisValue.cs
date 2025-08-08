@@ -1,6 +1,7 @@
 ﻿namespace codecrafters_redis.src;
 public class RedisValue
 {
+    //public string Type { get; set; } = "none";
     public string? StringValue { get; set; } = null;
     public List<string>? ListValue { get; set; } = null;
     public DateTime? Expiry { get; set; } = null;
