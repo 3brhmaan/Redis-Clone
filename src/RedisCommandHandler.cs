@@ -18,7 +18,7 @@ public class RedisCommandHandler
     public string ParseRedisCommand(string request)
     {
         var commandParts = ParseRespRequest(request);
-        
+
         //foreach (var part in commandParts)
         //    Console.Write($"{Thread.CurrentThread.ManagedThreadId}: {part} ");
         //Console.WriteLine();
@@ -39,22 +39,46 @@ public class RedisCommandHandler
             "LPOP" => HandleLPOP(commandArguments),
             "BLPOP" => HandleBLPOP(commandArguments),
             "TYPE" => HandleTYPE(commandArguments),
+            "XADD" => HandleXADD(commandArguments),
             _ => "-ERR unknown command\r\n"
         };
+    }
+
+    private string HandleXADD(string[] arguments)
+    {
+        var key = arguments[0];
+        var id = arguments[1];
+
+        if (!store.TryGetValue(key , out var value))
+        {
+            value = new RedisValue(key);
+            value.StramValue = new() { Id = id };
+        }
+
+        for(int i=2 ; i<arguments.Length ; i+=2)
+        {
+            value.StramValue?.KeyValuePairs.Add(arguments[i], arguments[i+1]);
+        }
+
+        store[key] = value;
+        Console.WriteLine($"Type: {store[key].ValueType}");
+
+        return $"${id.Length}\r\n{id}\r\n";
     }
 
     private string HandleTYPE(string[] arguments)
     {
         var key = arguments[0];
-        if(!store.ContainsKey(key))
+
+        if (!store.TryGetValue(key , out var value))
             return "+none\r\n";
         else
-            return "+string\r\n";
+            return $"+{value.ValueType}\r\n";
     }
 
     private object GetKeyLock(string key)
     {
-        return keyLocks.GetOrAdd(key, () => new object());
+        return keyLocks.GetOrAdd(key , () => new object());
     }
 
     private bool WaitWithOptionalTimeout(object lockObj , double timeoutSeconds)
@@ -89,10 +113,10 @@ public class RedisCommandHandler
             {
                 //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Will Sleep Soon");
 
-                bool wasPulsed = WaitWithOptionalTimeout(keyLock, timeoutSeconds);
+                bool wasPulsed = WaitWithOptionalTimeout(keyLock , timeoutSeconds);
                 //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Waked up and '{wasPulsed}' pulsed ?");
 
-                if(!wasPulsed)
+                if (!wasPulsed)
                     return "$-1\r\n";
             }
 
