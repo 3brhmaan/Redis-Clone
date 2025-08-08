@@ -45,10 +45,23 @@ public class RedisCommandHandler
         if(value.ListValue is null ||  value.ListValue.Count == 0)
             return "$-1\r\n";
 
-        var firstElement = value.ListValue[0];
-        value.ListValue.RemoveAt(0);
+        int numOfElementToRemove = 1;
+        if(arguments.Length > 1)
+            numOfElementToRemove = Math.Min(int.Parse(arguments[1]), value.ListValue.Count);
 
-        return $"${firstElement.Length}\r\n{firstElement}\r\n";
+        List<string> removedElements = value.ListValue.Take(numOfElementToRemove).ToList();
+        value.ListValue.RemoveRange(0, numOfElementToRemove);
+
+        var result = new StringBuilder();
+        if(arguments.Length > 1)
+        {
+            result.Append($"*{removedElements.Count}\r\n");
+        }
+
+        foreach( var element in removedElements )
+            result.Append($"${element.Length}\r\n{element}\r\n");
+
+        return result.ToString();
     }
 
     private string HandleLEN(string[] arguments)
