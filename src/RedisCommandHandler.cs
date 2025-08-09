@@ -1,422 +1,53 @@
-﻿using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
+﻿using codecrafters_redis.src.Commands;
+using codecrafters_redis.src.Data.Storage;
+using codecrafters_redis.src.Locking;
 
 namespace codecrafters_redis.src;
 
 
 public class RedisCommandHandler
 {
-    private readonly ConcurrentDictionary<string , RedisValue> store;
-    private readonly ConcurrentDictionary<string , object> keyLocks;
+    private readonly CommandRegistry commandRegistry;
+    private readonly IRedisStorage storage;
+    private readonly IKeyLockManager lockManager;
 
-    public RedisCommandHandler()
+    public RedisCommandHandler(
+            IRedisStorage storage ,
+            IKeyLockManager lockManager
+    )
     {
-        store = new();
-        keyLocks = new();
+        this.storage = storage;
+        this.lockManager = lockManager;
+        commandRegistry = new CommandRegistry();
+
+        RegisterCommands();
     }
 
+    private void RegisterCommands()
+    {
+        commandRegistry.Register(() => new BLPOPCommand(storage , lockManager));
+        commandRegistry.Register(() => new ECHOCommand(storage , lockManager));
+        commandRegistry.Register(() => new GETCommand(storage , lockManager));
+        commandRegistry.Register(() => new LLENCommand(storage , lockManager));
+        commandRegistry.Register(() => new LPOPCommand(storage , lockManager));
+        commandRegistry.Register(() => new LPUSHCommand(storage , lockManager));
+        commandRegistry.Register(() => new LRANGECommand(storage , lockManager));
+        commandRegistry.Register(() => new PINGCommand(storage , lockManager));
+        commandRegistry.Register(() => new RPUSHCommand(storage , lockManager));
+        commandRegistry.Register(() => new SETCommand(storage , lockManager));
+        commandRegistry.Register(() => new TYPECommand(storage , lockManager));
+        commandRegistry.Register(() => new XADDCommand(storage , lockManager));
+        commandRegistry.Register(() => new XRANGECommand(storage , lockManager));
+    }
     public string ParseRedisCommand(string request)
     {
-        var commandParts = ParseRespRequest(request);
+        var commandParts = RespParser.Parse(request);
 
-        //foreach (var part in commandParts)
-        //    Console.Write($"{Thread.CurrentThread.ManagedThreadId}: {part} ");
-        //Console.WriteLine();
+        var commandName = commandParts[0];
+        var arguments = commandParts.Skip(1).ToArray();
 
-        var commandName = commandParts[0].ToUpper();
-        var commandArguments = commandParts.Skip(1).ToArray();
+        var command = commandRegistry.GetCommand(commandName);
 
-        return commandName switch
-        {
-            "PING" => HandlePING(),
-            "ECHO" => HandleECHO(commandArguments),
-            "SET" => HandleSET(commandArguments),
-            "GET" => HandleGET(commandArguments),
-            "RPUSH" => HandleRPUSH(commandArguments),
-            "LPUSH" => HandleLPUSH(commandArguments),
-            "LRANGE" => HandleLRANGE(commandArguments),
-            "LLEN" => HandleLEN(commandArguments),
-            "LPOP" => HandleLPOP(commandArguments),
-            "BLPOP" => HandleBLPOP(commandArguments),
-            "TYPE" => HandleTYPE(commandArguments),
-            "XADD" => HandleXADD(commandArguments),
-            _ => "-ERR unknown command\r\n"
-        };
-    }
-
-    private bool ValidateStremEntryId(string id , string key , out string resultMessage)
-    {
-        if (id[^1] == '*')
-        {
-            resultMessage = "";
-            return true;
-        }
-        else if (id == "0-0")
-        {
-            resultMessage = "The ID specified in XADD must be greater than 0-0";
-            return false;
-        }
-        else
-        {
-            var idParts = id.Split('-');
-
-            if (store.TryGetValue(key , out var value))
-            {
-                var lastIdParts = value.StramValue[^1].Id.Split('-');
-
-                if (string.Compare(idParts[0] , lastIdParts[0]) > 0)
-                {
-                    resultMessage = "";
-                    return true;
-                }
-                else if (idParts[0] == lastIdParts[0] && string.Compare(idParts[1] , lastIdParts[1]) > 0)
-                {
-                    resultMessage = "";
-                    return true;
-                }
-                else
-                {
-                    resultMessage = "The ID specified in XADD is equal or smaller than the target stream top item";
-                    return false;
-                }
-            }
-            else
-            {
-                resultMessage = "";
-                return true;
-            }
-        }
-    }
-
-    private string GenerateStreamEntryId(string id , RedisValue value)
-    {
-        if (id == "*")
-        {
-            // full auto-generate id
-
-            string timeInMS = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-            var entry = value.StramValue?.FirstOrDefault(
-                (val) => val.Id.Split("-")[0] == timeInMS
-            );
-
-            if (entry is not null)
-                return $"{timeInMS}-{(int.Parse(entry.Id.Split("-")[1]) + 1).ToString()}";
-            else
-                return $"{timeInMS}-0";
-        }
-        else if (id[^1] == '*')
-        {
-            // partial auto-generate id
-
-            var idParts = id.Split("-");
-
-            if (value.StramValue?.Count == 0)
-            {
-                idParts[1] = idParts[0] != "0" ? "0" : "1";
-            }
-            else
-            {
-                var lastIdParts = value.StramValue[^1].Id.Split("-");
-                if (idParts[0] == lastIdParts[0])
-                {
-                    idParts[1] = (int.Parse(lastIdParts[1]) + 1).ToString();
-                }
-                else
-                {
-                    idParts[1] = "0";
-                }
-            }
-
-            return string.Join("-" , idParts);
-        }
-        else
-        {
-            // explicit id
-
-            return id;
-        }
-    }
-
-    private string HandleXADD(string[] arguments)
-    {
-        var key = arguments[0];
-        var id = arguments[1];
-
-        if (!ValidateStremEntryId(id , key , out var resultMessage))
-        {
-            return $"-ERR {resultMessage}\r\n";
-        }
-
-        if (!store.TryGetValue(key , out var value))
-        {
-            value = new RedisValue(key);
-            value.StramValue = new();
-        }
-
-        id = GenerateStreamEntryId(id , value);
-
-        var streamEntry = new RedisStreamEntry { Id = id };
-
-        for (int i = 2 ; i < arguments.Length ; i += 2)
-        {
-            streamEntry.KeyValuePairs.Add(arguments[i] , arguments[i + 1]);
-        }
-
-        value.StramValue?.Add(streamEntry);
-
-        store[key] = value;
-
-        return $"${id.Length}\r\n{id}\r\n";
-    }
-
-    private string HandleTYPE(string[] arguments)
-    {
-        var key = arguments[0];
-
-        if (!store.TryGetValue(key , out var value))
-            return "+none\r\n";
-        else
-            return $"+{value.ValueType}\r\n";
-    }
-
-    private object GetKeyLock(string key)
-    {
-        return keyLocks.GetOrAdd(key , () => new object());
-    }
-
-    private bool WaitWithOptionalTimeout(object lockObj , double timeoutSeconds)
-    {
-        if (timeoutSeconds == 0)
-        {
-            Monitor.Wait(lockObj);
-            return true;
-        }
-        else
-        {
-            bool wasPulsed = Monitor.Wait(lockObj , TimeSpan.FromSeconds(timeoutSeconds));
-            return wasPulsed;
-        }
-    }
-
-    private string HandleBLPOP(string[] arguments)
-    {
-        var key = arguments[0];
-        double timeoutSeconds = double.Parse(arguments[1]);
-
-        var keyLock = GetKeyLock(key);
-
-        //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Before Lock");
-
-        lock (keyLock)
-        {
-            //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Lock & Before Checking If Key Exist");
-
-            // sleep untill the key is available or timeout has elapsed
-            while (!store.ContainsKey(key) || store[key].ListValue?.Count == 0)
-            {
-                //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Will Sleep Soon");
-
-                bool wasPulsed = WaitWithOptionalTimeout(keyLock , timeoutSeconds);
-                //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} Waked up and '{wasPulsed}' pulsed ?");
-
-                if (!wasPulsed)
-                    return "$-1\r\n";
-            }
-
-            //Console.WriteLine($"Consumer {Thread.CurrentThread.ManagedThreadId} After Waking Up");
-
-            var returnedValue = store[key].ListValue[0];
-            store[key].ListValue?.RemoveAt(0);
-
-            return $"*2\r\n${key.Length}\r\n{key}\r\n${returnedValue.Length}\r\n{returnedValue}\r\n";
-        }
-    }
-
-    private string HandleLPOP(string[] arguments)
-    {
-        string key = arguments[0];
-        if (!store.ContainsKey(key))
-            return "$-1\r\n";
-
-        var value = store[key];
-        if (value.ListValue is null || value.ListValue.Count == 0)
-            return "$-1\r\n";
-
-        int numOfElementToRemove = 1;
-        if (arguments.Length > 1)
-            numOfElementToRemove = Math.Min(int.Parse(arguments[1]) , value.ListValue.Count);
-
-        List<string> removedElements = value.ListValue.Take(numOfElementToRemove).ToList();
-        value.ListValue.RemoveRange(0 , numOfElementToRemove);
-
-        var result = new StringBuilder();
-        if (arguments.Length > 1)
-        {
-            result.Append($"*{removedElements.Count}\r\n");
-        }
-
-        foreach (var element in removedElements)
-            result.Append($"${element.Length}\r\n{element}\r\n");
-
-        return result.ToString();
-    }
-
-    private string HandleLEN(string[] arguments)
-    {
-        string key = arguments[0];
-
-        if (!store.ContainsKey(key))
-            return ":0\r\n";
-
-        return $":{store[key].ListValue?.Count}\r\n";
-    }
-
-    private string HandleLRANGE(string[] arguments)
-    {
-        string key = arguments[0];
-        int startIdx = int.Parse(arguments[1]);
-        int endIdx = int.Parse(arguments[2]);
-
-        if (!store.ContainsKey(key))
-            return "*0\r\n";
-
-        var value = store[key];
-
-        if (startIdx < 0)
-            startIdx = value.ListValue!.Count + startIdx;
-
-        if (endIdx < 0)
-            endIdx = value.ListValue!.Count + endIdx;
-
-        startIdx = Math.Max(0 , startIdx);
-        endIdx = Math.Max(0 , endIdx);
-
-        if (endIdx >= value.ListValue!.Count)
-            endIdx = value.ListValue.Count - 1;
-
-        if (startIdx >= value.ListValue!.Count || startIdx > endIdx)
-            return "*0\r\n";
-
-        var result = new StringBuilder();
-        result.Append($"*{endIdx - startIdx + 1}\r\n");
-
-        for (int i = startIdx ; i <= endIdx ; i++)
-            result.Append($"${value.ListValue[i].Length}\r\n{value.ListValue[i]}\r\n");
-
-        return result.ToString();
-    }
-
-    private string HandleGeneralPush(string[] arguments , Action<RedisValue , List<string>> action)
-    {
-        var key = arguments[0];
-        var values = arguments.Skip(1).ToList();
-
-        var redisValue = new RedisValue();
-
-        //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Lock");
-        var keyLock = GetKeyLock(key);
-        lock (keyLock)
-        {
-            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Lock");
-
-            if (!store.ContainsKey(key))
-                redisValue.ListValue = new();
-            else
-                redisValue = store[key];
-
-            action(redisValue , values);
-
-            store[key] = redisValue;
-
-            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} Before Waking Up All Threads");
-
-            // wake only threads waiting for this key
-            Monitor.PulseAll(keyLock);
-
-            //Console.WriteLine($"Producer {Thread.CurrentThread.ManagedThreadId} After Waking Up All Threads");
-
-
-            return $":{store[key]!.ListValue!.Count}\r\n";
-        }
-    }
-
-    private string HandleLPUSH(string[] arguments)
-    {
-        return HandleGeneralPush(arguments , (redisValue , values) =>
-        {
-            foreach (var e in values)
-                redisValue.ListValue.Insert(0 , e);
-        });
-    }
-
-    private string HandleRPUSH(string[] arguments)
-    {
-        return HandleGeneralPush(arguments , (redisValue , values) => redisValue!.ListValue!.AddRange(values));
-    }
-
-    private string HandlePING()
-    {
-        return "+PONG\r\n";
-    }
-
-    private string HandleECHO(string[] arguments)
-    {
-        string message = arguments[0];
-        return $"+{message}\r\n";
-    }
-
-    private string HandleSET(string[] arguments)
-    {
-        string key = arguments[0];
-        string value = arguments[1];
-
-        var redisValue = new RedisValue(value);
-
-        // Handle expiration (PX option)
-        if (arguments.Length > 2 && arguments[2].ToLower() == "px")
-        {
-            //Console.WriteLine($"MilliSecond: {arguments[3]}");
-            if (int.TryParse(arguments[3] , out int milliseconds))
-            {
-                redisValue.Expiry = DateTime.UtcNow.AddMilliseconds(milliseconds);
-            }
-        }
-
-        store[key] = redisValue;
-        return "+OK\r\n";
-    }
-
-    private string HandleGET(string[] arguments)
-    {
-        string key = arguments[0];
-
-        if (!store.ContainsKey(key))
-        {
-            return "$-1\r\n";
-        }
-
-        var redisValue = store[key];
-
-        if (redisValue.IsExpired)
-        {
-            store.Remove(key , out var _);
-            return "$-1\r\n";
-        }
-
-        return $"${redisValue.StringValue.Length}\r\n{redisValue.StringValue}\r\n";
-    }
-
-    private string[] ParseRespRequest(string request)
-    {
-        var result = request
-            .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
-            .Where((value) => !((value.StartsWith("*") && value.Length > 1) || value.StartsWith("$")))
-            .ToArray();
-
-        return result;
+        return command.Execute(arguments);
     }
 }
-
-// !((start with * AND length > 1) OR (start with $))
-// 

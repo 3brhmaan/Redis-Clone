@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using codecrafters_redis.src.Data.Storage;
+using codecrafters_redis.src.Locking;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -9,12 +11,12 @@ public class RedisServer
     private readonly RedisCommandHandler commandHandler;
     private readonly int port;
 
-    public RedisServer(int port = 6379)
+    public RedisServer(RedisCommandHandler commandHandler , int port = 6379)
     {
         this.port = port;
+        this.commandHandler = commandHandler;
 
         server = new TcpListener(IPAddress.Any , port);
-        commandHandler = new RedisCommandHandler();
     }
 
     public void Start()
@@ -24,10 +26,9 @@ public class RedisServer
         while (true)
         {
             var client = server.AcceptSocket(); // waiting connection
-            var task = Task.Run(() => HandleClient(client));
+            _ = Task.Run(() => HandleClient(client));
         }
     }
-
     private void HandleClient(Socket client)
     {
         try
