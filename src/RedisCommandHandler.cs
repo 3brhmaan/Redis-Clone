@@ -47,20 +47,20 @@ public class RedisCommandHandler
 
     private bool ValidateStremEntryId(string id , string key , out string resultMessage)
     {
-        var idParts = id.Split('-');
-
-        if (idParts[1] == "*")
+        if (id[^1] == '*')
         {
             resultMessage = "";
             return true;
         }
-        else if (idParts[0] == "0" && idParts[1] == "0")
+        else if (id == "0-0")
         {
             resultMessage = "The ID specified in XADD must be greater than 0-0";
             return false;
         }
         else
         {
+            var idParts = id.Split('-');
+
             if (store.TryGetValue(key , out var value))
             {
                 var lastIdParts = value.StramValue[^1].Id.Split('-');
@@ -91,29 +91,51 @@ public class RedisCommandHandler
 
     private string GenerateStreamEntryId(string id , RedisValue value)
     {
-        var idParts = id.Split("-");
-
-        if (idParts[1] != "*")
-            return id;
-
-        if (value.StramValue?.Count == 0)
+        if (id == "*")
         {
-            idParts[1] = idParts[0] != "0" ? "0" : "1";
+            // full auto-generate id
+
+            string timeInMS = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+            var entry = value.StramValue?.FirstOrDefault(
+                (val) => val.Id.Split("-")[0] == timeInMS
+            );
+
+            if (entry is not null)
+                return $"{timeInMS}-{(int.Parse(entry.Id.Split("-")[1]) + 1).ToString()}";
+            else
+                return $"{timeInMS}-0";
         }
-        else
+        else if (id[^1] == '*')
         {
-            var lastIdParts = value.StramValue[^1].Id.Split("-");
-            if (idParts[0] == lastIdParts[0])
+            // partial auto-generate id
+
+            var idParts = id.Split("-");
+
+            if (value.StramValue?.Count == 0)
             {
-                idParts[1] = (int.Parse(lastIdParts[1]) + 1).ToString();
+                idParts[1] = idParts[0] != "0" ? "0" : "1";
             }
             else
             {
-                idParts[1] = "0";
+                var lastIdParts = value.StramValue[^1].Id.Split("-");
+                if (idParts[0] == lastIdParts[0])
+                {
+                    idParts[1] = (int.Parse(lastIdParts[1]) + 1).ToString();
+                }
+                else
+                {
+                    idParts[1] = "0";
+                }
             }
-        }
 
-        return string.Join("-" , idParts);
+            return string.Join("-" , idParts);
+        }
+        else
+        {
+            // explicit id
+
+            return id;
+        }
     }
 
     private string HandleXADD(string[] arguments)
@@ -133,7 +155,6 @@ public class RedisCommandHandler
         }
 
         id = GenerateStreamEntryId(id , value);
-
 
         var streamEntry = new RedisStreamEntry { Id = id };
 
@@ -390,9 +411,12 @@ public class RedisCommandHandler
     {
         var result = request
             .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
-            .Where((value) => !value.StartsWith('*') && !value.StartsWith('$'))
+            .Where((value) => !((value.StartsWith("*") && value.Length > 1) || value.StartsWith("$")))
             .ToArray();
 
         return result;
     }
 }
+
+// !((start with * AND length > 1) OR (start with $))
+// 
