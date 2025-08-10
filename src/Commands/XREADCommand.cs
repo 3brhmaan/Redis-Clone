@@ -12,29 +12,47 @@ public class XREADCommand : RedisCommand
 
     public override string Execute(string[] arguments)
     {
-        var key = arguments[1];
-        var id = arguments[2];
+        var keys = arguments.Skip(1).Where(x => !x.Contains("-")).ToList();
+        var ids = arguments.Skip(1).Where(x => x.Contains("-")).ToList();
 
-        storage.TryGet(key, out var value);
+        var values = new List<RedisValue>();
+        foreach (var key in keys)
+        {
+            values.Add(storage.Get(key));
+        }
 
-        var entries = (value as RedisStream)?.Entries?.Where(
-            (entry) => string.Compare(entry.Id , id) > 0
-        ).ToList();
+        var valuesEntries = new List<List<RedisStreamEntry>>();
+        for(int i=0; i<ids.Count; i++)
+        {
+            var valueEntries = (values[i] as RedisStream)?.Entries?
+                .Where(e => string.Compare(e.Id, ids[i]) > 0).ToList();
+
+            if(valueEntries != null)
+            {
+                valuesEntries.Add(valueEntries);
+            }
+        }
 
         var result = new StringBuilder();
-        result.Append($"*1\r\n*2\r\n${key.Length}\r\n{key}\r\n");
-        result.Append($"*{entries?.Count}\r\n");
-
-        foreach (var entry in entries)
+        result.Append($"*{valuesEntries.Count}\r\n");
+        
+        for(int i=0; i<valuesEntries.Count; i++)
         {
-            result.Append("*2\r\n");
-            result.Append($"${entry.Id.Length}\r\n{entry.Id}\r\n");
-            result.Append($"*{entry.Fields.Count * 2}\r\n");
+            result.Append($"*2\r\n");
+            result.Append($"${keys[i].Length}\r\n{keys[i]}\r\n");
+            result.Append($"*{valuesEntries[i]?.Count}\r\n");
 
-            foreach (var pair in entry.Fields)
+            foreach (var entry in valuesEntries[i])
             {
-                result.Append($"${pair.Key.Length}\r\n{pair.Key}\r\n");
-                result.Append($"${pair.Value.Length}\r\n{pair.Value}\r\n");
+                result.Append("*2\r\n");
+                result.Append($"${entry.Id.Length}\r\n{entry.Id}\r\n");
+                result.Append($"*{entry.Fields.Count * 2}\r\n");
+
+                foreach (var pair in entry.Fields)
+                {
+                    result.Append($"${pair.Key.Length}\r\n{pair.Key}\r\n");
+                    result.Append($"${pair.Value.Length}\r\n{pair.Value}\r\n");
+                }
             }
         }
 
