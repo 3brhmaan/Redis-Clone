@@ -18,6 +18,16 @@ public class XRANGECommand : RedisCommand
         var start = arguments[1];
         var end = arguments[2];
 
+        if(start == "-")
+        {
+            start = (value as RedisStream).Entries[0].Id;
+        }
+
+        if(end == "+")
+        {
+            end = (value as RedisStream).Entries[^1].Id;
+        }
+
         if (!start.Contains("-"))
         {
             start += "-0";
