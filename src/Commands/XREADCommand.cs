@@ -15,6 +15,20 @@ public class XREADCommand : RedisCommand
         var keys = arguments.Skip(1).Where(x => !x.Contains("-")).ToList();
         var ids = arguments.Skip(1).Where(x => x.Contains("-")).ToList();
 
+        int wait = -1;
+
+        if (arguments[0] == "block")
+        {
+            wait = int.Parse(arguments[1]);
+            keys = arguments.Skip(3).Where(x => !x.Contains("-")).ToList();
+            ids = arguments.Where(x => x.Contains("-")).ToList();
+        }
+
+        if(wait != -1)
+        {
+            Thread.Sleep(wait);
+        }
+
         var values = new List<RedisValue>();
         foreach (var key in keys)
         {
@@ -27,10 +41,15 @@ public class XREADCommand : RedisCommand
             var valueEntries = (values[i] as RedisStream)?.Entries?
                 .Where(e => string.Compare(e.Id, ids[i]) > 0).ToList();
 
-            if(valueEntries != null)
+            if(valueEntries != null && valueEntries.Count > 0)
             {
                 valuesEntries.Add(valueEntries);
             }
+        }
+
+        if(valuesEntries.Count == 0)
+        {
+            return "$-1\r\n";
         }
 
         var result = new StringBuilder();
