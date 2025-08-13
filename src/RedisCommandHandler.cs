@@ -39,6 +39,7 @@ public class RedisCommandHandler
         commandRegistry.Register(() => new XADDCommand(storage , lockManager));
         commandRegistry.Register(() => new XRANGECommand(storage , lockManager));
         commandRegistry.Register(() => new XREADCommand(storage , lockManager));
+        commandRegistry.Register(() => new INCRCommand(storage , lockManager));
     }
     public string ParseRedisCommand(string request)
     {
