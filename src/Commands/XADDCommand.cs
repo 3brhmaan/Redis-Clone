@@ -34,7 +34,13 @@ internal class XADDCommand : RedisCommand
 
         value.Entries?.Add(streamEntry);
 
-        storage.Set(key , value);
+        var lockObj = lockManager.GetLock(key);
+        lock (lockObj)
+        {
+            storage.Set(key , value);
+
+            lockManager.SignalKey(lockObj);
+        }
 
         return $"${id.Length}\r\n{id}\r\n";
     }

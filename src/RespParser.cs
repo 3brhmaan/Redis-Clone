@@ -5,7 +5,7 @@ public static class RespParser
     {
         return request
             .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
-            .Where(value => !((value.StartsWith("*") && value.Length > 1) || value.StartsWith("$")))
+            .Where(value => !((value.StartsWith("*") && value.Trim().Length > 1) || (value.StartsWith("$") && value.Trim().Length > 1)))
             .ToArray();
     }
 }

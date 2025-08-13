@@ -9,6 +9,7 @@ public class KeyLockManager : IKeyLockManager
     {
         return keyLocks.GetOrAdd(key , _ => new object());
     }
+
     public bool WaitForSignal(string key , TimeSpan? timeout = null)
     {
         var lockObj = GetLock(key);
@@ -16,6 +17,7 @@ public class KeyLockManager : IKeyLockManager
             ? Monitor.Wait(lockObj , timeout.Value)
             : Monitor.Wait(lockObj);
     }
+
     public void SignalKey(object lockObj)
     {
         Monitor.PulseAll(lockObj);
