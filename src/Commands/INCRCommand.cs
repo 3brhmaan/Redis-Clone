@@ -12,22 +12,16 @@ public class INCRCommand : RedisCommand
     public override string Execute(string[] arguments)
     {
         var key = arguments[0];
-        if(storage.TryGet(key, out var value))
-        {
-            var newValue = value as RedisString;
-            newValue.Value = (int.Parse(newValue.Value) + 1).ToString();
+        var value = new RedisString("1");
 
-            storage.Set(key, newValue);
-        }
-        else
+        if (storage.ContainsKey(key))
         {
-            var newValue = value as RedisString;
-            newValue.Value = "1";
-
-            storage.Set(key, newValue);
+            value = storage.Get(key) as RedisString;
+            value.Value = (int.Parse(value.Value) + 1).ToString();
         }
 
-        Console.WriteLine((value as RedisString).Value);
-        return $":{(value as RedisString).Value}\r\n";
+        storage.Set(key , value);
+
+        return $":{value.Value}\r\n";
     }
 }
