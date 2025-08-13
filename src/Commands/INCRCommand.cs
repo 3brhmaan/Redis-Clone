@@ -17,7 +17,15 @@ public class INCRCommand : RedisCommand
         if (storage.ContainsKey(key))
         {
             value = storage.Get(key) as RedisString;
-            value.Value = (int.Parse(value.Value) + 1).ToString();
+
+            if(int.TryParse(value.Value, out var result))
+            {
+                value.Value = (result + 1).ToString();
+            }
+            else
+            {
+                return "-ERR value is not an integer or out of range\r\n";
+            }
         }
 
         storage.Set(key , value);
