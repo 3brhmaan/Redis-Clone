@@ -1,20 +1,7 @@
 ﻿namespace codecrafters_redis.src.Transactions;
 public class TransactionState
 {
-    public bool IsInTransaction { get; private set;} = false;
     private List<(string name, string[] args)> CommandQueue { get; set; } = new();
-
-    public void StartTransaction()
-    {
-        IsInTransaction = true;
-        CommandQueue.Clear();
-    }
-
-    public void EndTransaction()
-    {
-        IsInTransaction = false;
-        CommandQueue.Clear();
-    }
 
     public void QueueCommand(string command , string[] args)
     {

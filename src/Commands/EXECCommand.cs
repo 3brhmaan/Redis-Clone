@@ -20,7 +20,7 @@ public class EXECCommand : RedisCommand
     {
         var transactionState = transactionManager.GetTransactionState();
 
-        if (!transactionState.IsInTransaction)
+        if (transactionState is null)
         {
             return "-ERR EXEC without MULTI\r\n";
         }

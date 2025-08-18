@@ -46,17 +46,24 @@ public class RedisCommandHandler
         commandRegistry.Register(() => new INCRCommand(storage , lockManager));
         commandRegistry.Register(() => new MULTICommand(storage , lockManager));
         commandRegistry.Register(() => new EXECCommand(storage , lockManager));
+        commandRegistry.Register(() => new DISCARDCommand(storage , lockManager));
     }
-    public string ParseRedisCommand(string request)
+    public string ParseRedisCommand(string request, string clientId)
     {
-        var transactionState = transactionManager.GetTransactionState();
-
         var commandParts = RespParser.Parse(request);
 
         var commandName = commandParts[0];
         var arguments = commandParts.Skip(1).ToArray();
 
-        if (transactionState is not null && transactionState.IsInTransaction && commandName != "EXEC")
+
+        if(commandName == "MULTI")
+        {
+            transactionManager.CreateTransactionState(clientId);
+        }
+
+        var transactionState = transactionManager.GetTransactionState();
+
+        if (transactionState is not null && commandName != "MULTI" && commandName != "EXEC" && commandName != "DISCARD")
         {
             transactionState.QueueCommand(commandName , arguments);
             return "+QUEUED\r\n";

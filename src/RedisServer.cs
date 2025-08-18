@@ -33,7 +33,6 @@ public class RedisServer
         try
         {
             string clientId = client.RemoteEndPoint?.ToString()!;
-            TransactionManager.Instance.SetCurrentClientId(clientId);
 
             while (client.Connected)
             {
@@ -47,7 +46,7 @@ public class RedisServer
                 }
 
                 string request = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
-                string response = commandHandler.ParseRedisCommand(request);
+                string response = commandHandler.ParseRedisCommand(request, clientId);
 
                 client.Send(Encoding.UTF8.GetBytes(response));
             }

@@ -3,12 +3,12 @@ using codecrafters_redis.src.Locking;
 using codecrafters_redis.src.Transactions;
 
 namespace codecrafters_redis.src.Commands;
-public class MULTICommand : RedisCommand
+public class DISCARDCommand : RedisCommand
 {
     private readonly TransactionManager transactionManager;
-    public override string Name => "MULTI";
-    public MULTICommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager)
+    public override string Name => "DISCARD";
+    public DISCARDCommand(IRedisStorage storage , IKeyLockManager lockManager)
+    : base(storage , lockManager)
     {
         transactionManager = TransactionManager.Instance;
     }
@@ -17,6 +17,15 @@ public class MULTICommand : RedisCommand
     {
         var transactionState = transactionManager.GetTransactionState();
 
-        return "+OK\r\n";
+        if(transactionState is not null )
+        {
+            transactionManager.RemoveTransactionState();
+
+            return "+OK\r\n";
+        }
+        else
+        {
+            return "-ERR DISCARD without MULTI\r\n";
+        }
     }
 }
