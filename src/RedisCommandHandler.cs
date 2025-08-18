@@ -11,7 +11,7 @@ public class RedisCommandHandler
     private readonly CommandRegistry commandRegistry;
     private readonly IRedisStorage storage;
     private readonly IKeyLockManager lockManager;
-    private readonly TransactionState transactionState;
+    private readonly TransactionManager transactionManager;
 
     public RedisCommandHandler(
             IRedisStorage storage ,
@@ -21,7 +21,7 @@ public class RedisCommandHandler
         this.storage = storage;
         this.lockManager = lockManager;
 
-        transactionState = TransactionState.Instance;
+        transactionManager = TransactionManager.Instance;
         commandRegistry = CommandRegistry.Instance;
 
         RegisterCommands();
@@ -49,12 +49,14 @@ public class RedisCommandHandler
     }
     public string ParseRedisCommand(string request)
     {
+        var transactionState = transactionManager.GetTransactionState();
+
         var commandParts = RespParser.Parse(request);
 
         var commandName = commandParts[0];
         var arguments = commandParts.Skip(1).ToArray();
 
-        if (transactionState.IsInTransaction && commandName != "EXEC")
+        if (transactionState is not null && transactionState.IsInTransaction && commandName != "EXEC")
         {
             transactionState.QueueCommand(commandName , arguments);
             return "+QUEUED\r\n";

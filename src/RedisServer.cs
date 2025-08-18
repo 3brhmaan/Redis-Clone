@@ -1,5 +1,4 @@
-﻿using codecrafters_redis.src.Data.Storage;
-using codecrafters_redis.src.Locking;
+﻿using codecrafters_redis.src.Transactions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -33,6 +32,9 @@ public class RedisServer
     {
         try
         {
+            string clientId = client.RemoteEndPoint?.ToString()!;
+            TransactionManager.Instance.SetCurrentClientId(clientId);
+
             while (client.Connected)
             {
                 byte[] buffer = new byte[1024];

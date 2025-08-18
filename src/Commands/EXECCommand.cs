@@ -6,18 +6,20 @@ using System.Text;
 namespace codecrafters_redis.src.Commands;
 public class EXECCommand : RedisCommand
 {
-    private readonly TransactionState transactionState;
     private readonly CommandRegistry commandRegistry;
+    private readonly TransactionManager transactionManager;
     public override string Name => "EXEC";
     public EXECCommand(IRedisStorage storage , IKeyLockManager lockManager)
         : base(storage , lockManager)
     {
-        transactionState = TransactionState.Instance;
         commandRegistry = CommandRegistry.Instance;
+        transactionManager = TransactionManager.Instance;
     }
 
     public override string Execute(string[] arguments)
     {
+        var transactionState = transactionManager.GetTransactionState();
+
         if (!transactionState.IsInTransaction)
         {
             return "-ERR EXEC without MULTI\r\n";
@@ -39,6 +41,8 @@ public class EXECCommand : RedisCommand
             {
                 return "*0\r\n";
             }
+
+            transactionManager.RemoveTransactionState();
 
             return result.ToString();
         }

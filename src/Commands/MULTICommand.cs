@@ -5,17 +5,19 @@ using codecrafters_redis.src.Transactions;
 namespace codecrafters_redis.src.Commands;
 public class MULTICommand : RedisCommand
 {
-    private readonly TransactionState state;
+    private readonly TransactionManager transactionManager;
     public override string Name => "MULTI";
     public MULTICommand(IRedisStorage storage , IKeyLockManager lockManager)
         : base(storage , lockManager)
     {
-        state = TransactionState.Instance;
+        transactionManager = TransactionManager.Instance;
     }
 
     public override string Execute(string[] arguments)
     {
-        state.StartTransaction();
+        var transactionState = transactionManager.GetTransactionState();
+
+        transactionState.StartTransaction();
         return "+OK\r\n";
     }
 }

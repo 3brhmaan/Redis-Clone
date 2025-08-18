@@ -1,19 +1,8 @@
 ﻿namespace codecrafters_redis.src.Transactions;
 public class TransactionState
 {
-    private static TransactionState instance;
     public bool IsInTransaction { get; private set;} = false;
     private List<(string name, string[] args)> CommandQueue { get; set; } = new();
-    public static TransactionState Instance
-    {
-        get
-        {
-            if(instance == null)
-                instance = new TransactionState();
-
-            return instance;
-        }
-    }
 
     public void StartTransaction()
     {
