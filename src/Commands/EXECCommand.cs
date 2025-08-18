@@ -29,17 +29,11 @@ public class EXECCommand : RedisCommand
             var queuedCommands = transactionState.GetQueuedCommands();
 
             var result = new StringBuilder();
+            result.Append($"*{queuedCommands.Count}\r\n");
             foreach (var queuedCommand in queuedCommands)
             {
                 var command = commandRegistry.GetCommand(queuedCommand.name);
                 result.Append(command.Execute(queuedCommand.args));
-            }
-
-            transactionState.EndTransaction();
-
-            if (queuedCommands.Count == 0)
-            {
-                return "*0\r\n";
             }
 
             transactionManager.RemoveTransactionState();
