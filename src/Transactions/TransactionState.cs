@@ -2,8 +2,8 @@
 public class TransactionState
 {
     private static TransactionState instance;
-    public bool IsInTransaction { get; set; } = false;
-    public List<(string name, string[] args)> CommandQueue { get; set; } = new();
+    public bool IsInTransaction { get; private set;} = false;
+    private List<(string name, string[] args)> CommandQueue { get; set; } = new();
     public static TransactionState Instance
     {
         get

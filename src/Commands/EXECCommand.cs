@@ -25,11 +25,19 @@ public class EXECCommand : RedisCommand
         else
         {
             var queuedCommands = transactionState.GetQueuedCommands();
+
             var result = new StringBuilder();
             foreach (var queuedCommand in queuedCommands)
             {
                 var command = commandRegistry.GetCommand(queuedCommand.name);
                 result.Append(command.Execute(queuedCommand.args));
+            }
+
+            transactionState.EndTransaction();
+
+            if (queuedCommands.Count == 0)
+            {
+                return "*0\r\n";
             }
 
             return result.ToString();

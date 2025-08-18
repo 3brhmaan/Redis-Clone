@@ -54,7 +54,7 @@ public class RedisCommandHandler
         var commandName = commandParts[0];
         var arguments = commandParts.Skip(1).ToArray();
 
-        if (transactionState.IsInTransaction)
+        if (transactionState.IsInTransaction && commandName != "EXEC")
         {
             transactionState.QueueCommand(commandName , arguments);
             return "+QUEUED\r\n";

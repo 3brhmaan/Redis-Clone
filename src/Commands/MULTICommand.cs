@@ -8,7 +8,7 @@ public class MULTICommand : RedisCommand
     private readonly TransactionState state;
     public override string Name => "MULTI";
     public MULTICommand(IRedisStorage storage , IKeyLockManager lockManager)
-    : base(storage , lockManager)
+        : base(storage , lockManager)
     {
         state = TransactionState.Instance;
     }
