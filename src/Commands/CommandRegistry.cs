@@ -5,7 +5,19 @@ using System.Reflection;
 namespace codecrafters_redis.src.Commands;
 public class CommandRegistry
 {
+    private static CommandRegistry registry;
     private readonly Dictionary<string , Func<IRedisCommand>> commands = new();
+
+    public static CommandRegistry Instance
+    {
+        get
+        {
+            if(registry == null)
+                registry = new CommandRegistry();
+
+            return registry;
+        }
+    }
 
     public void Register<T>(Func<T> factory) where T : IRedisCommand
     {

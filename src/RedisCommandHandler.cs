@@ -1,6 +1,7 @@
 ﻿using codecrafters_redis.src.Commands;
 using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
+using codecrafters_redis.src.Transactions;
 
 namespace codecrafters_redis.src;
 
@@ -10,6 +11,7 @@ public class RedisCommandHandler
     private readonly CommandRegistry commandRegistry;
     private readonly IRedisStorage storage;
     private readonly IKeyLockManager lockManager;
+    private readonly TransactionState transactionState;
 
     public RedisCommandHandler(
             IRedisStorage storage ,
@@ -18,7 +20,9 @@ public class RedisCommandHandler
     {
         this.storage = storage;
         this.lockManager = lockManager;
-        commandRegistry = new CommandRegistry();
+
+        transactionState = TransactionState.Instance;
+        commandRegistry = CommandRegistry.Registry;
 
         RegisterCommands();
     }
@@ -49,8 +53,16 @@ public class RedisCommandHandler
         var commandName = commandParts[0];
         var arguments = commandParts.Skip(1).ToArray();
 
-        var command = commandRegistry.GetCommand(commandName);
+        if (transactionState.IsInTransaction)
+        {
+            transactionState.QueueCommand(commandName , arguments);
+            return "+QUEUED\r\n";
+        }
+        else
+        {
+            var command = commandRegistry.GetCommand(commandName);
 
-        return command.Execute(arguments);
+            return command.Execute(arguments);
+        }
     }
 }
