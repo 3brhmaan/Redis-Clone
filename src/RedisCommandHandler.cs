@@ -22,7 +22,7 @@ public class RedisCommandHandler
         this.lockManager = lockManager;
 
         transactionState = TransactionState.Instance;
-        commandRegistry = CommandRegistry.Registry;
+        commandRegistry = CommandRegistry.Instance;
 
         RegisterCommands();
     }
@@ -45,6 +45,7 @@ public class RedisCommandHandler
         commandRegistry.Register(() => new XREADCommand(storage , lockManager));
         commandRegistry.Register(() => new INCRCommand(storage , lockManager));
         commandRegistry.Register(() => new MULTICommand(storage , lockManager));
+        commandRegistry.Register(() => new EXECCommand(storage , lockManager));
     }
     public string ParseRedisCommand(string request)
     {
