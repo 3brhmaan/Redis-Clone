@@ -1,6 +1,5 @@
 ﻿using codecrafters_redis.src.Core;
-using codecrafters_redis.src.Data.Storage;
-using codecrafters_redis.src.Locking;
+using System.Text;
 
 namespace codecrafters_redis.src.Commands;
 public class INFOCommand : RedisCommand
@@ -12,17 +11,29 @@ public class INFOCommand : RedisCommand
 
     public override string Execute(string[] arguments)
     {
-        string result = "";
+        StringBuilder result = new ();
         switch (configuration.ReplicationMode)
         {
             case ReplicationMode.Master:
-                result = $"$11\r\nrole:master\r\n";
+                int len = "role:master".Length + 
+                    "master_replid".Length + 41 + 
+                    "master_repl_offset".Length + configuration.MasterReplOffset.ToString().Length + 1;
+
+                result.Append($"${len}\r\nrole:master");
+                result.Append(
+                    $"master_replid:{configuration.MasterReplId}"
+                );
+                result.Append(
+                    $"master_repl_offset:{configuration.MasterReplOffset}\r\n"
+                );
                 break;
             case ReplicationMode.Slave:
-                result = $"$10\r\nrole:slave\r\n";
+                result.Append($"$10\r\nrole:slave\r\n");
                 break;
         }
 
-        return result;
+        Console.WriteLine (result.ToString ());
+
+        return result.ToString();
     }
 }

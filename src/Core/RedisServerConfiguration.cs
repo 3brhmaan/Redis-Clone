@@ -1,11 +1,17 @@
 ﻿namespace codecrafters_redis.src.Core;
 public class RedisServerConfiguration
 {
+    // Server settings
     public int Port { get; set; } = 6379;
     public ReplicationMode ReplicationMode { get; set; } = ReplicationMode.Master;
+
+    // Remote master settings (when this server is a slave)
     public string? MasterHost { get; set; }
     public int? MasterPort { get; set; }
-    public string ServerId { get; set; } = Guid.NewGuid().ToString();
+
+    // Master settings (when this server is a master)
+    public string MasterReplId { get; } = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
+    public int MasterReplOffset { get; set; } = 0; // Can be modified as replication progresses
 
     public static RedisServerConfiguration ParseArguments(string[] args)
     {
