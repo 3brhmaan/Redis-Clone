@@ -47,6 +47,7 @@ public class RedisCommandHandler
         commandRegistry.Register(() => new MULTICommand(storage , lockManager));
         commandRegistry.Register(() => new EXECCommand(storage , lockManager));
         commandRegistry.Register(() => new DISCARDCommand(storage , lockManager));
+        commandRegistry.Register(() => new INFOCommand(storage , lockManager));
     }
     public string ParseRedisCommand(string request, string clientId)
     {
