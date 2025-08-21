@@ -1,23 +1,10 @@
-﻿using codecrafters_redis.src.Data.Storage;
-using codecrafters_redis.src.Locking;
-using System.Reflection;
-
-namespace codecrafters_redis.src.Commands;
-public class CommandRegistry
+﻿namespace codecrafters_redis.src.Commands;
+public class CommandFactory
 {
-    private static CommandRegistry registry;
+    private static CommandFactory? _instance;
     private readonly Dictionary<string , Func<IRedisCommand>> commands = new();
 
-    public static CommandRegistry Instance
-    {
-        get
-        {
-            if(registry == null)
-                registry = new CommandRegistry();
-
-            return registry;
-        }
-    }
+    public static CommandFactory Instance => _instance ??= new CommandFactory();
 
     public void Register<T>(Func<T> factory) where T : IRedisCommand
     {

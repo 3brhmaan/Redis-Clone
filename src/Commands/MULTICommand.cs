@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
 using codecrafters_redis.src.Transactions;
 
@@ -7,8 +8,8 @@ public class MULTICommand : RedisCommand
 {
     private readonly TransactionManager transactionManager;
     public override string Name => "MULTI";
-    public MULTICommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager)
+    public MULTICommand(IServerContext serverContext) 
+        : base(serverContext) 
     {
         transactionManager = TransactionManager.Instance;
     }

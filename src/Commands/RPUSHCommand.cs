@@ -1,13 +1,12 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
 using codecrafters_redis.src.Data.Values;
-using codecrafters_redis.src.Locking;
 
 namespace codecrafters_redis.src.Commands;
-internal class RPUSHCommand : RedisCommand
+public class RPUSHCommand : RedisCommand
 {
     public override string Name => "RPUSH";
-    public RPUSHCommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager) { }
+    public RPUSHCommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

@@ -1,12 +1,11 @@
-﻿using codecrafters_redis.src.Data.Storage;
-using codecrafters_redis.src.Locking;
+﻿using codecrafters_redis.src.Core;
 
 namespace codecrafters_redis.src.Commands;
-internal class ECHOCommand : RedisCommand
+public class ECHOCommand : RedisCommand
 {
     public override string Name => "ECHO";
-    public ECHOCommand(IRedisStorage storage , IKeyLockManager lockManager)
-    : base(storage , lockManager) { }
+    public ECHOCommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

@@ -1,17 +1,19 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
 
 namespace codecrafters_redis.src.Commands;
 public abstract class RedisCommand : IRedisCommand
 {
-    protected readonly IRedisStorage storage;
-    protected readonly IKeyLockManager lockManager;
+    protected readonly IServerContext _serverContext;
+    protected IRedisStorage storage => _serverContext.Storage;
+    protected IKeyLockManager lockManager => _serverContext.LockManager;
+    protected RedisServerConfiguration configuration => _serverContext.Configuration;
     public abstract string Name { get; }
 
-    protected RedisCommand(IRedisStorage storage , IKeyLockManager lockManager)
+    protected RedisCommand(IServerContext serverContext)
     {
-        this.storage = storage;
-        this.lockManager = lockManager;
+        _serverContext = serverContext;
     }
 
     public abstract string Execute(string[] arguments);

@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Data.Values;
 using codecrafters_redis.src.Locking;
 using System.Text;
@@ -7,9 +8,9 @@ namespace codecrafters_redis.src.Commands;
 public class XRANGECommand : RedisCommand
 {
     public override string Name => "XRANGE";
-    public XRANGECommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager) { }
-    
+    public XRANGECommand(IServerContext serverContext) 
+        : base(serverContext) { }
+
     public override string Execute(string[] arguments)
     {
         var key = arguments[0];

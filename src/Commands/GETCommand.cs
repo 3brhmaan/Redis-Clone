@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Data.Values;
 using codecrafters_redis.src.Locking;
 
@@ -7,8 +8,8 @@ public class GETCommand : RedisCommand
 {
     public override string Name => "GET";
 
-    public GETCommand(IRedisStorage storage, IKeyLockManager lockManager)
-        : base(storage, lockManager) { }
+    public GETCommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

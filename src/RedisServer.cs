@@ -7,12 +7,10 @@ namespace codecrafters_redis.src;
 public class RedisServer
 {
     private readonly TcpListener server;
-    private readonly RedisCommandHandler commandHandler;
-    private readonly int port;
+    private readonly RedisRequestProcessor commandHandler;
 
-    public RedisServer(RedisCommandHandler commandHandler , int port = 6379)
+    public RedisServer(RedisRequestProcessor commandHandler , int port)
     {
-        this.port = port;
         this.commandHandler = commandHandler;
 
         server = new TcpListener(IPAddress.Any , port);
@@ -46,7 +44,7 @@ public class RedisServer
                 }
 
                 string request = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
-                string response = commandHandler.ParseRedisCommand(request, clientId);
+                string response = commandHandler.ParseRedisCommand(request , clientId);
 
                 client.Send(Encoding.UTF8.GetBytes(response));
             }

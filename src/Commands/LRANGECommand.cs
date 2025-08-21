@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Data.Values;
 using codecrafters_redis.src.Locking;
 using System.Text;
@@ -7,8 +8,8 @@ namespace codecrafters_redis.src.Commands;
 public class LRANGECommand : RedisCommand
 {
     public override string Name => "LRANGE";
-    public LRANGECommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager) { }
+    public LRANGECommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

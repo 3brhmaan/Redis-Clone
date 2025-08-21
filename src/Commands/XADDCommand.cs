@@ -1,13 +1,12 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
 using codecrafters_redis.src.Data.Values;
-using codecrafters_redis.src.Locking;
 
 namespace codecrafters_redis.src.Commands;
-internal class XADDCommand : RedisCommand
+public class XADDCommand : RedisCommand
 {
     public override string Name => "XADD";
-    public XADDCommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager) { }
+    public XADDCommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

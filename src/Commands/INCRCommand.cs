@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Data.Values;
 using codecrafters_redis.src.Locking;
 
@@ -6,8 +7,8 @@ namespace codecrafters_redis.src.Commands;
 public class INCRCommand : RedisCommand
 {
     public override string Name => "INCR";
-    public INCRCommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager) { }
+    public INCRCommand(IServerContext serverContext) 
+        : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {

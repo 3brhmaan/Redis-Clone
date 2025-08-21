@@ -1,16 +1,20 @@
 using codecrafters_redis.src;
+using codecrafters_redis.src.Core;
 using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
 
-int port = 6379;
-if(args.Length > 0)
-{
-    port = int.Parse(args[1]);
-}
+var configuration = RedisServerConfiguration.ParseArguments(args);
+var storage = new RedisStorage();
+var lockManager = new KeyLockManager();
 
-var redisServer = new RedisServer(
-    new RedisCommandHandler(new RedisStorage() , new KeyLockManager()) , 
-    port
+var serverContext = new ServerContext(
+    configuration ,
+    storage ,
+    lockManager
 );
 
-redisServer.Start();
+var commandHandler = new RedisRequestProcessor(serverContext);
+
+var server = new RedisServer(commandHandler , configuration.Port);
+
+server.Start();

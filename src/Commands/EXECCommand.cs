@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Data.Storage;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
 using codecrafters_redis.src.Transactions;
 using System.Text;
@@ -6,13 +7,13 @@ using System.Text;
 namespace codecrafters_redis.src.Commands;
 public class EXECCommand : RedisCommand
 {
-    private readonly CommandRegistry commandRegistry;
+    private readonly CommandFactory commandRegistry;
     private readonly TransactionManager transactionManager;
     public override string Name => "EXEC";
-    public EXECCommand(IRedisStorage storage , IKeyLockManager lockManager)
-        : base(storage , lockManager)
+    public EXECCommand(IServerContext serverContext) 
+        : base(serverContext) 
     {
-        commandRegistry = CommandRegistry.Instance;
+        commandRegistry = CommandFactory.Instance;
         transactionManager = TransactionManager.Instance;
     }
 
