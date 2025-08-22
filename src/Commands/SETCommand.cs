@@ -20,15 +20,11 @@ public class SETCommand : RedisCommand
         // Handle expiration (PX option)
         if (arguments.Length > 2 && arguments[2].ToLower() == "px")
         {
-            //Console.WriteLine($"MilliSecond: {arguments[3]}");
             if (int.TryParse(arguments[3] , out int milliseconds))
             {
                 redisValue.Expiry = DateTime.UtcNow.AddMilliseconds(milliseconds);
             }
         }
-
-        if(storage is null)
-            Console.WriteLine("Trueee");
 
         storage.Set(key , redisValue);
         return "+OK\r\n";

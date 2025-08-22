@@ -1,5 +1,4 @@
 ﻿using codecrafters_redis.src.Core;
-using codecrafters_redis.src.Transactions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -10,6 +9,7 @@ public class RedisServer
     private readonly TcpListener server;
     private readonly RedisRequestProcessor commandHandler;
     private readonly RedisServerConfiguration configuration;
+    private readonly List<Socket> replicasConnection = new();
 
     public RedisServer(RedisRequestProcessor commandHandler , RedisServerConfiguration configuration)
     {
@@ -58,9 +58,17 @@ public class RedisServer
 
                 if (request.Contains("PSYNC"))
                 {
-                    // send empty RDB after the 3 handshake response have been sended
+                    // as a master send empty RDB after the 3 handshake response have been sended
                     SendEmptyRDBFile(client);
+
+                    replicasConnection.Add(client);
                 }
+
+                if(configuration.ReplicationMode == ReplicationMode.Master)
+                {
+                    PropagateWriteCommandsToReplicas(request);
+                }
+
             }
 
             client.Close();
@@ -70,6 +78,30 @@ public class RedisServer
             Console.WriteLine(ex);
         }
     }
+
+    private void PropagateWriteCommandsToReplicas(string request)
+    {
+        if (IsWriteCommand(request))
+        {
+            foreach (var replica in replicasConnection)
+            {
+                replica.Send(Encoding.UTF8.GetBytes(request));
+            }
+        }
+    }
+    private bool IsWriteCommand(string command)
+    {
+        List<string> writeCommands = ["SET"];
+
+        foreach (var writeCommand in writeCommands)
+        {
+            if (command.Contains(writeCommand))
+                return true;
+        }
+
+        return false;
+    }
+
     private void SendEmptyRDBFile(Socket client)
     {
         string base64RDB = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==";
@@ -105,10 +137,11 @@ public class RedisServer
                 // REPLCONF command (capabilities)
                 string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
 
-                // PSYNC Command with <master replication id> and <offset>
-                string psyncCommand = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n";
                 if (SendAndVerify(stream , replconf2 , "OK"))
                 {
+                    // PSYNC Command with <master replication id> and <offset>
+                    string psyncCommand = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n";
+
                     SendAndVerify(stream , psyncCommand , "FULLRESYNC");
                 }
             }
