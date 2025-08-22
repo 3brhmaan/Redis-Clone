@@ -21,15 +21,31 @@ public class RedisServer
 
     public void Start()
     {
-        if(configuration.ReplicationMode == ReplicationMode.Slave)
+        if (configuration.ReplicationMode == ReplicationMode.Slave)
         {
             var master = new TcpClient(
-                configuration.MasterHost, configuration.MasterPort.Value
+                configuration.MasterHost , configuration.MasterPort.Value
             );
 
             var stream = master.GetStream();
 
-            stream.Write(Encoding.UTF8.GetBytes("*1\r\n$4\r\nPING\r\n"));
+            //PING command
+            string pingCommand = "*1\r\n$4\r\nPING\r\n";
+
+            if (SendAndVerify(stream, pingCommand, "PONG"))
+            {
+                // REPLCONF command (listening-port)
+                string replicaPort = configuration.Port.ToString();
+                string replconf1 = $"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n${replicaPort.Length}\r\n{replicaPort}\r\n";
+
+                if (SendAndVerify(stream, replconf1, "OK"))
+                {
+                    // REPLCONF command (capabilities)
+                    string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
+                    
+                    SendAndVerify(stream, replconf2, "OK");
+                }
+            }
         }
 
         server.Start();
@@ -69,5 +85,15 @@ public class RedisServer
         {
             Console.WriteLine(ex);
         }
+    }
+    private bool SendAndVerify(NetworkStream stream , string command , string expected)
+    {
+        stream.Write(Encoding.UTF8.GetBytes(command));
+
+        byte[] buffer = new byte[1024];
+        int bytesRead = stream.Read(buffer , 0 , buffer.Length);
+        string response = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
+
+        return response.Contains(expected);
     }
 }
