@@ -43,7 +43,12 @@ public class RedisServer
                     // REPLCONF command (capabilities)
                     string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
                     
-                    SendAndVerify(stream, replconf2, "OK");
+                    // PSYNC Command with <master replication id> and <offset>
+                    string psyncCommand = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n";
+                    if (SendAndVerify(stream, replconf2, "OK"))
+                    {
+                        SendAndVerify(stream, psyncCommand, "FULLRESYNC");
+                    }
                 }
             }
         }
