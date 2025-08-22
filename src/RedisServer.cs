@@ -1,4 +1,5 @@
-﻿using codecrafters_redis.src.Transactions;
+﻿using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Transactions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,16 +9,29 @@ public class RedisServer
 {
     private readonly TcpListener server;
     private readonly RedisRequestProcessor commandHandler;
+    private readonly RedisServerConfiguration configuration;
 
-    public RedisServer(RedisRequestProcessor commandHandler , int port)
+    public RedisServer(RedisRequestProcessor commandHandler , RedisServerConfiguration configuration)
     {
         this.commandHandler = commandHandler;
+        this.configuration = configuration;
 
-        server = new TcpListener(IPAddress.Any , port);
+        server = new TcpListener(IPAddress.Any , configuration.Port);
     }
 
     public void Start()
     {
+        if(configuration.ReplicationMode == ReplicationMode.Slave)
+        {
+            var master = new TcpClient(
+                configuration.MasterHost, configuration.MasterPort.Value
+            );
+
+            var stream = master.GetStream();
+
+            stream.Write(Encoding.UTF8.GetBytes("*1\r\n$4\r\nPING\r\n"));
+        }
+
         server.Start();
 
         while (true)

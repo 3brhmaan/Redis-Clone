@@ -15,6 +15,6 @@ var serverContext = new ServerContext(
 
 var commandHandler = new RedisRequestProcessor(serverContext);
 
-var server = new RedisServer(commandHandler , configuration.Port);
+var server = new RedisServer(commandHandler , configuration);
 
 server.Start();

@@ -32,8 +32,6 @@ public class INFOCommand : RedisCommand
                 break;
         }
 
-        Console.WriteLine (result.ToString ());
-
         return result.ToString();
     }
 }
