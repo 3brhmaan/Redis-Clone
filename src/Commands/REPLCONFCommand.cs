@@ -14,7 +14,9 @@ public class REPLCONFCommand : RedisCommand
 
         if (arguments.Contains("GETACK" , StringComparer.OrdinalIgnoreCase))
         {
-            return "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
+            int offsetLen = configuration.MasterReplOffset.ToString().Length;
+            int offset = configuration.MasterReplOffset;
+            return $"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n${offsetLen}\r\n{offset}\r\n";
         }
 
         return "+OK\r\n";

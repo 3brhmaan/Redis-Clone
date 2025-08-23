@@ -47,6 +47,7 @@ public class RedisRequestProcessor
     }
     public string ParseRedisCommand(string request, string clientId)
     {
+        //Console.WriteLine($"Parsing: {request}");
         var commandParts = RedisProtocolParser.Parse(request);
 
         var commandName = commandParts[0];

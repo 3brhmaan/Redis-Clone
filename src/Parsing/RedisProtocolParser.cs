@@ -6,6 +6,7 @@ public static class RedisProtocolParser
         return request
             .Split("\r\n" , StringSplitOptions.RemoveEmptyEntries)
             .Where(value => !(value.StartsWith("*") && value.Trim().Length > 1 || value.StartsWith("$") && value.Trim().Length > 1))
+            .Select(value => value.Trim())
             .ToArray();
     }
 }
