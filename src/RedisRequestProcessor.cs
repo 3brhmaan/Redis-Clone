@@ -44,6 +44,7 @@ public class RedisRequestProcessor
         commandRegistry.Register(() => new INFOCommand(_serverContext));
         commandRegistry.Register(() => new REPLCONFCommand(_serverContext));
         commandRegistry.Register(() => new PSYNCCommand(_serverContext));
+        commandRegistry.Register(() => new WAITCommand(_serverContext));
     }
     public string ParseRedisCommand(string request, string clientId)
     {

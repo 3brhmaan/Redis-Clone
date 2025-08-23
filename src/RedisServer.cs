@@ -45,7 +45,6 @@ public class RedisServer
     {
         try
         {
-            //client.NoDelay = true;
             string clientId = client.RemoteEndPoint?.ToString()!;
 
             while (client.Connected)
