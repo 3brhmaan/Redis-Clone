@@ -8,6 +8,6 @@ internal class WAITCommand : RedisCommand
 
     public override string Execute(string[] arguments)
     {
-        return ":0\r\n";
+        return $":{configuration.ReplicaCount}\r\n";
     }
 }

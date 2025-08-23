@@ -68,6 +68,7 @@ public class RedisServer
                 {
                     SendEmptyRDBFile(client);
                     replicasConnection.Add(client);
+                    configuration.ReplicaCount ++;
 
                     continue;
                 }
