@@ -29,6 +29,7 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new REPLCONFCommand(context));
     context.CommandContainer.Register(() => new PSYNCCommand(context));
     context.CommandContainer.Register(() => new WAITCommand(context));
+    context.CommandContainer.Register(() => new CONFIGCommand(context));
 }
 
 

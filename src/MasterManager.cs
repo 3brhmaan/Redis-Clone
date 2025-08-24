@@ -16,7 +16,7 @@ public class MasterManager
     {
         if (IsWriteCommand(request))
         {
-            Console.WriteLine($"Propagating {request.Length} to Replica, {request}");
+            //Console.WriteLine($"Propagating {request.Length} to Replica, {request}");
 
             foreach (var replica in configuration.ReplicaConnection)
             {

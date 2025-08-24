@@ -6,6 +6,8 @@ public class RedisServerConfiguration
     // Server settings
     public int Port { get; set; } = 6379;
     public ReplicationMode ReplicationMode { get; set; } = ReplicationMode.Master;
+    public string RDBdire { get; set; }
+    public string RDBdbfilename { get; set; }
 
     // Remote master settings (when this server is a slave)
     public string? MasterHost { get; set; }
@@ -13,7 +15,7 @@ public class RedisServerConfiguration
 
     // Master settings (when this server is a master)
     public string MasterReplId { get; } = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
-    public int MasterReplOffset { get; set; } = 0; // Can be modified as replication progresses
+    public int MasterReplOffset { get; set; } = 0; // replica/master offset
     public List<Socket> ReplicaConnection { get; set; } = new();
 
     public static RedisServerConfiguration ParseArguments(string[] args)
@@ -32,6 +34,12 @@ public class RedisServerConfiguration
                     config.ReplicationMode = ReplicationMode.Slave;
                     config.MasterHost = masterInfo[0];
                     config.MasterPort = int.Parse(masterInfo[1]);
+                    break;
+                case "--dir":
+                    config.RDBdire = args[++i];
+                    break;
+                case "--dbfilename":
+                    config.RDBdbfilename = args[++i];
                     break;
             }
         }
