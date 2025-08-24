@@ -1,4 +1,6 @@
-﻿namespace codecrafters_redis.src.Core;
+﻿using System.Net.Sockets;
+
+namespace codecrafters_redis.src.Core;
 public class RedisServerConfiguration
 {
     // Server settings
@@ -12,7 +14,7 @@ public class RedisServerConfiguration
     // Master settings (when this server is a master)
     public string MasterReplId { get; } = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
     public int MasterReplOffset { get; set; } = 0; // Can be modified as replication progresses
-    public int ReplicaCount { get; set; } = 0;
+    public List<Socket> ReplicaConnection { get; set; } = new();
 
     public static RedisServerConfiguration ParseArguments(string[] args)
     {

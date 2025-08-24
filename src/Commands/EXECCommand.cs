@@ -7,13 +7,13 @@ using System.Text;
 namespace codecrafters_redis.src.Commands;
 public class EXECCommand : RedisCommand
 {
-    private readonly CommandFactory commandRegistry;
+    private readonly CommandContainer commandContainer;
     private readonly TransactionManager transactionManager;
     public override string Name => "EXEC";
     public EXECCommand(IServerContext serverContext) 
         : base(serverContext) 
     {
-        commandRegistry = CommandFactory.Instance;
+        commandContainer = serverContext.CommandContainer;
         transactionManager = TransactionManager.Instance;
     }
 
@@ -33,7 +33,7 @@ public class EXECCommand : RedisCommand
             result.Append($"*{queuedCommands.Count}\r\n");
             foreach (var queuedCommand in queuedCommands)
             {
-                var command = commandRegistry.GetCommand(queuedCommand.name);
+                var command = commandContainer.GetCommand(queuedCommand.name);
                 result.Append(command.Execute(queuedCommand.args));
             }
 
