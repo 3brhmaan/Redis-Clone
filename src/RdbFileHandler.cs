@@ -55,6 +55,39 @@ public class RdbFileHandler
 
                     while (tableSize-- > 0)
                     {
+                        bool expired = false;
+
+                        currentByte = $"{fileContent[i]:X2}";
+                        if (currentByte == "FC")
+                        {
+                            int expireStart = i + 1;
+                            int expireEnd = i + 9;
+                            var expireBytes = fileContent[expireStart..expireEnd];
+
+                            ulong expiryMs = BitConverter.ToUInt64(expireBytes , 0);
+                            ulong currentTimeMs = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                            if (expiryMs < currentTimeMs)
+                                expired = true;
+
+                            i += 9;
+                        }
+
+                        if (currentByte == "FD")
+                        {
+                            int expireStart = i + 1;
+                            int expireEnd = i + 5;
+                            var expireBytes = fileContent[expireStart..expireEnd];
+
+                            ulong expirySec = BitConverter.ToUInt64(expireBytes , 0);
+                            ulong currentTimeSec = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                            if (expirySec < currentTimeSec)
+                                expired = true;
+
+                            i += 5;
+                        }
+
                         var keySize = Convert.ToInt32(fileContent[i + 1]);
                         var keyStart = i + 2;
                         var keyEnd = keyStart + keySize;
@@ -70,6 +103,11 @@ public class RdbFileHandler
                         var value = Encoding.ASCII.GetString(valueBytes);
 
                         result[key] = value;
+
+                        if (expired)
+                        {
+                            result[key] = "-1";
+                        }
 
                         i += keySize + valueSize + 3;
                     }

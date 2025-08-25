@@ -21,6 +21,12 @@ public class GETCommand : RedisCommand
         {
             var value = RdbFileHandler.LoadKeysAndValues(dir , filename)[key];
 
+            // mean expired
+            if (value == "-1")
+            {
+                return "$-1\r\n";
+            }
+
             return $"${value.Length}\r\n{value}\r\n";
         }
         else
