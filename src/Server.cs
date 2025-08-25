@@ -30,10 +30,17 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new PSYNCCommand(context));
     context.CommandContainer.Register(() => new WAITCommand(context));
     context.CommandContainer.Register(() => new CONFIGCommand(context));
+    context.CommandContainer.Register(() => new KEYSCommand(context));
 }
 
 
-var configuration = RedisServerConfiguration.ParseArguments(args);
+var configuration = new RedisServerConfiguration(args);
+
+if (!string.IsNullOrEmpty(configuration.RDBdire))
+{
+    RdbFileHandler.EnsureFileExist(configuration.RDBdire, configuration.RDBdbfilename);
+}
+
 var storage = new RedisStorage();
 var lockManager = new KeyLockManager();
 var commandContainer = new CommandContainer();

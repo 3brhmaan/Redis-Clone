@@ -18,32 +18,28 @@ public class RedisServerConfiguration
     public int MasterReplOffset { get; set; } = 0; // replica/master offset
     public List<Socket> ReplicaConnection { get; set; } = new();
 
-    public static RedisServerConfiguration ParseArguments(string[] args)
+    public RedisServerConfiguration(string[] args)
     {
-        var config = new RedisServerConfiguration();
-
         for (int i = 0 ; i < args.Length ; i++)
         {
             switch (args[i])
             {
                 case "--port":
-                    config.Port = int.Parse(args[++i]);
+                    Port = int.Parse(args[++i]);
                     break;
                 case "--replicaof":
                     var masterInfo = args[++i].Split(' ');
-                    config.ReplicationMode = ReplicationMode.Slave;
-                    config.MasterHost = masterInfo[0];
-                    config.MasterPort = int.Parse(masterInfo[1]);
+                    ReplicationMode = ReplicationMode.Slave;
+                    MasterHost = masterInfo[0];
+                    MasterPort = int.Parse(masterInfo[1]);
                     break;
                 case "--dir":
-                    config.RDBdire = args[++i];
+                    RDBdire = args[++i];
                     break;
                 case "--dbfilename":
-                    config.RDBdbfilename = args[++i];
+                    RDBdbfilename = args[++i];
                     break;
             }
         }
-
-        return config;
     }
 }
