@@ -14,8 +14,15 @@ internal class KEYSCommand : RedisCommand
         var dir = _serverContext.Configuration.RDBdire;
         var filename = _serverContext.Configuration.RDBdbfilename;
 
-        var keys = RdbFileHandler.LoadKeysAndValues(dir , filename).Keys.ToArray();
+        var keys = RdbFileHandler.LoadKeysAndValues(dir , filename).Keys.ToList();
 
-        return $"*1\r\n${keys[0].Length}\r\n{keys[0]}\r\n";
+        var result = new StringBuilder();
+        result.Append($"*{keys.Count}\r\n");
+        foreach (var key in keys)
+        {
+            result.Append($"${key.Length}\r\n{key}\r\n");
+        }
+
+        return result.ToString();
     }
 }

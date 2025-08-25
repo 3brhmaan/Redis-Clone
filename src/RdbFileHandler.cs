@@ -36,7 +36,7 @@ public class RdbFileHandler
     }
     public static Dictionary<string , string> LoadKeysAndValues(string directoryPath , string fileName)
     {
-        var result = new Dictionary<string, string>();
+        var result = new Dictionary<string , string>();
 
         try
         {
@@ -50,21 +50,30 @@ public class RdbFileHandler
                 // Indicates that hash table size information follows.
                 if (currentByte == "FB")
                 {
-                    var keySize = Convert.ToInt32(fileContent[i + 4]);
-                    var keyStart = i + 5;
-                    var keyEnd = keyStart + keySize;
+                    var tableSize = Convert.ToInt32(fileContent[i + 1]);
+                    i += 3;
 
-                    var keyBytes = fileContent[keyStart..keyEnd];
-                    var key = Encoding.UTF8.GetString(keyBytes);
+                    while (tableSize-- > 0)
+                    {
+                        var keySize = Convert.ToInt32(fileContent[i + 1]);
+                        var keyStart = i + 2;
+                        var keyEnd = keyStart + keySize;
 
-                    var valueSize = Convert.ToInt32(fileContent[keyEnd]);
-                    var valueStart = keyEnd + 1;
-                    var valueEnd = valueStart + valueSize;
+                        var keyBytes = fileContent[keyStart..keyEnd];
+                        var key = Encoding.UTF8.GetString(keyBytes);
 
-                    var valueBytes = fileContent[valueStart..valueEnd];
-                    var value = Encoding.ASCII.GetString(valueBytes);
+                        var valueSize = Convert.ToInt32(fileContent[keyEnd]);
+                        var valueStart = keyEnd + 1;
+                        var valueEnd = valueStart + valueSize;
 
-                    result[key] = value;
+                        var valueBytes = fileContent[valueStart..valueEnd];
+                        var value = Encoding.ASCII.GetString(valueBytes);
+
+                        result[key] = value;
+
+                        i += keySize + valueSize + 3;
+                    }
+
                 }
             }
         }
