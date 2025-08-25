@@ -34,9 +34,10 @@ public class RdbFileHandler
             Console.Error.WriteLine($"Error ensuring directory and file exist: {ex.Message}");
         }
     }
-    public static string[] LoadKeys(string directoryPath , string fileName)
+    public static Dictionary<string , string> LoadKeysAndValues(string directoryPath , string fileName)
     {
-        var result = new List<string>();
+        var result = new Dictionary<string, string>();
+
         try
         {
             var filePath = Path.Combine(directoryPath , fileName);
@@ -54,9 +55,16 @@ public class RdbFileHandler
                     var keyEnd = keyStart + keySize;
 
                     var keyBytes = fileContent[keyStart..keyEnd];
-                    var keyValue = Encoding.UTF8.GetString(keyBytes);
+                    var key = Encoding.UTF8.GetString(keyBytes);
 
-                    result.Add(keyValue);
+                    var valueSize = Convert.ToInt32(fileContent[keyEnd]);
+                    var valueStart = keyEnd + 1;
+                    var valueEnd = valueStart + valueSize;
+
+                    var valueBytes = fileContent[valueStart..valueEnd];
+                    var value = Encoding.ASCII.GetString(valueBytes);
+
+                    result[key] = value;
                 }
             }
         }
@@ -65,6 +73,6 @@ public class RdbFileHandler
             Console.WriteLine(ex);
         }
 
-        return result.ToArray();
+        return result;
     }
 }

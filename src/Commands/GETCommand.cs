@@ -8,26 +8,37 @@ public class GETCommand : RedisCommand
 {
     public override string Name => "GET";
 
-    public GETCommand(IServerContext serverContext) 
+    public GETCommand(IServerContext serverContext)
         : base(serverContext) { }
 
     public override string Execute(string[] arguments)
     {
         string key = arguments[0];
+        var dir = _serverContext.Configuration.RDBdire;
+        var filename = _serverContext.Configuration.RDBdbfilename;
 
-        if (!storage.ContainsKey(key))
+        if (!string.IsNullOrEmpty(dir) && !string.IsNullOrEmpty(filename))
         {
-            return "$-1\r\n";
+            var value = RdbFileHandler.LoadKeysAndValues(dir , filename)[key];
+
+            return $"${value.Length}\r\n{value}\r\n";
         }
-
-        var redisValue = storage.Get(key) as RedisString;
-
-        if (redisValue.IsExpired)
+        else
         {
-            storage.Remove(key);
-            return "$-1\r\n";
-        }
+            if (!storage.ContainsKey(key))
+            {
+                return "$-1\r\n";
+            }
 
-        return $"${redisValue.Value.Length}\r\n{redisValue.Value}\r\n";
+            var redisValue = storage.Get(key) as RedisString;
+
+            if (redisValue.IsExpired)
+            {
+                storage.Remove(key);
+                return "$-1\r\n";
+            }
+
+            return $"${redisValue.Value.Length}\r\n{redisValue.Value}\r\n";
+        }
     }
 }
