@@ -24,11 +24,19 @@ public class ZADDCommand : RedisCommand
                 redisValue = storage.Get(key) as RedisSortedSet;
             }
 
-            redisValue.Values.Add(score, memberName);
+            var isMemberExist = redisValue.Set.Any(x => x.Value == memberName);
 
-            storage.Set(key, redisValue);
+            if (isMemberExist)
+            {
+                var member = redisValue.Set.FirstOrDefault(x => x.Value == memberName);
+                redisValue.Set.Remove(member.Key);
+            }
 
-            return $":1\r\n";
+            redisValue.Set.Add(score , memberName);
+
+            storage.Set(key , redisValue);
+
+            return isMemberExist ? $":0\r\n" : $":1\r\n";
         }
     }
 }
