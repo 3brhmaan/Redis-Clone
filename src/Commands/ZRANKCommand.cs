@@ -24,12 +24,6 @@ public class ZRANKCommand : RedisCommand
             return "$-1\r\n";
         }
 
-        //var memberRank = redisValue.Set
-        //        .Select((item , index) => new { item , index })
-        //        .Where(x => x.item.value == memberName)
-        //        .Select(x => x.index)
-        //        .FirstOrDefault(-1);
-
         int memberRank = -1, index = 0;
         foreach(var item in redisValue.Set)
         {

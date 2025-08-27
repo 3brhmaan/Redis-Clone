@@ -37,6 +37,7 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new UNSUBSCRIBECommand(context));
     context.CommandContainer.Register(() => new ZADDCommand(context));
     context.CommandContainer.Register(() => new ZRANKCommand(context));
+    context.CommandContainer.Register(() => new ZRANGECommand(context));
 }
 
 
