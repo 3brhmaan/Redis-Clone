@@ -24,15 +24,15 @@ public class ZADDCommand : RedisCommand
                 redisValue = storage.Get(key) as RedisSortedSet;
             }
 
-            var isMemberExist = redisValue.Set.Any(x => x.Value == memberName);
+            var isMemberExist = redisValue.Set.Any(x => x.value == memberName);
 
             if (isMemberExist)
             {
-                var member = redisValue.Set.FirstOrDefault(x => x.Value == memberName);
-                redisValue.Set.Remove(member.Key);
+                var member = redisValue.Set.FirstOrDefault(x => x.value == memberName);
+                redisValue.Set.Remove(member);
             }
 
-            redisValue.Set.Add(score , memberName);
+            redisValue.Set.Add((score , memberName));
 
             storage.Set(key , redisValue);
 

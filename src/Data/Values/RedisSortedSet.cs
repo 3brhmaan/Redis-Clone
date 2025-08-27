@@ -2,7 +2,13 @@
 public class RedisSortedSet : RedisValue
 {
     public override string Type => RedisDataType.SortedSet;
-    public SortedDictionary<double , string> Set { get; set; } = new();
+    public SortedSet<(double key, string value)> Set { get; set; } = new(
+        Comparer<(double key, string value)>.Create((x , y) =>
+        {
+            int keyComparison = x.key.CompareTo(y.key);
+            return keyComparison != 0 ? keyComparison : x.value.CompareTo(y.value);
+        })
+    );
 
     public RedisSortedSet(DateTime? expiry = null) : base(expiry) { }
 }
