@@ -33,6 +33,7 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new CONFIGCommand(context));
     context.CommandContainer.Register(() => new KEYSCommand(context));
     context.CommandContainer.Register(() => new SUBSCRIBECommand(context));
+    context.CommandContainer.Register(() => new PUBLISHCommand(context));
 }
 
 
