@@ -58,7 +58,7 @@ public class ReplicaManager
 
         if (overflowCommand is not null)
         {
-            string overflowResponse = commandExecutor.Execute(overflowCommand , clientId);
+            string overflowResponse = commandExecutor.Execute(overflowCommand , client);
             configuration.MasterReplOffset += overflowCommand.Length;
 
             if (overflowCommand.Contains("REPLCONF"))
@@ -89,7 +89,7 @@ public class ReplicaManager
                 foreach (string request in requests)
                 {
                     //Console.WriteLine($"Readig {request.Length} bytes from {request}");
-                    string response = commandExecutor.Execute(request , clientId);
+                    string response = commandExecutor.Execute(request , client);
                     configuration.MasterReplOffset += request.Length;
 
                     if (request.Contains("REPLCONF"))

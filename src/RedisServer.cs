@@ -43,8 +43,6 @@ public class RedisServer
     {
         try
         {
-            string clientId = client.RemoteEndPoint?.ToString()!;
-
             while (client.Connected)
             {
                 byte[] buffer = new byte[1024];
@@ -57,7 +55,7 @@ public class RedisServer
                 }
 
                 string request = Encoding.UTF8.GetString(buffer , 0 , bytesRead);
-                string response = context.CommandExecutor.Execute(request , clientId);
+                string response = context.CommandExecutor.Execute(request , client);
                 client.Send(Encoding.UTF8.GetBytes(response));
 
 

@@ -2,6 +2,7 @@
 using codecrafters_redis.src.Parsing;
 using codecrafters_redis.src.PubSub;
 using codecrafters_redis.src.Transactions;
+using System.Net.Sockets;
 
 namespace codecrafters_redis.src.Commands;
 
@@ -18,8 +19,10 @@ public class CommandExecutor
         this.container = container;
         this.subscriptionManager = subscriptionManager;
     }
-    public string Execute(string strCommand , string clientId)
+    public string Execute(string strCommand , Socket client)
     {
+        string clientId = client.RemoteEndPoint?.ToString()!;
+
         var commandParts = RedisProtocolParser.Parse(strCommand);
 
         var commandName = commandParts[0];
@@ -27,7 +30,7 @@ public class CommandExecutor
 
         if(commandName == "SUBSCRIBE")
         {
-            subscriptionManager.SetCurrentClient(clientId);
+            subscriptionManager.SetCurrentClient(client);
         }
 
         if(subscriptionManager.IsInSubscribeMode && !IsSubscribeModeCommands(commandName))
