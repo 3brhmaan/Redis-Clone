@@ -13,7 +13,7 @@ public class SubscriptionManager
     public bool IsInSubscribeMode => _isInSubcsribeMode.Value;
     public HashSet<Socket> GetChannelSockts(string channel)
     {
-        if(_channelSockets.TryGetValue(channel, out var sockts))
+        if (_channelSockets.TryGetValue(channel , out var sockts))
             return sockts;
         else
             return new HashSet<Socket> { };
@@ -40,9 +40,24 @@ public class SubscriptionManager
             }
 
             _channelSockets[channel].Add(_currentClient.Value);
-
             _clientChannels[clientId].Add(channel);
+
             return _clientChannels[clientId].Count;
         }
+    }
+    public int Unsubscribe(string channel)
+    {
+        string clientId = _currentClient.Value.RemoteEndPoint?.ToString()!;
+
+        lock (_lock)
+        {
+            if (_clientChannels.ContainsKey(clientId) && _clientChannels[clientId].Contains(channel))
+                _clientChannels[clientId].Remove(channel);
+
+            if(_channelSockets.ContainsKey(channel) && _channelSockets[channel].Contains(_currentClient.Value))
+                _channelSockets[channel].Remove(_currentClient.Value);
+        }
+
+        return _clientChannels[clientId].Count;
     }
 }
