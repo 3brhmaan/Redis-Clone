@@ -30,6 +30,11 @@ public class CommandExecutor
             subscriptionManager.SetCurrentClient(clientId);
         }
 
+        if(subscriptionManager.IsInSubscribeMode && !IsSubscribeModeCommands(commandName))
+        {
+            return $"-ERR Can't execute '{commandName}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context\r\n";
+        }
+
         if (commandName == "MULTI")
         {
             transactionManager.CreateTransactionState(clientId);
@@ -49,9 +54,15 @@ public class CommandExecutor
             return command.Execute(arguments);
         }
     }
-    private static bool IsTransactionControlCommand(string commandName)
+    private bool IsTransactionControlCommand(string commandName)
     {
         var upperCommand = commandName.ToUpper();
         return upperCommand is "MULTI" or "EXEC" or "DISCARD";
+    }
+    private bool IsSubscribeModeCommands(string commandName)
+    {
+        var upperCommand = commandName.ToUpper();
+
+        return upperCommand is "SUBSCRIBE" or "UNSUBSCRIBE" or "PSUBSCRIBE" or "PUNSUBSCRIBE" or "PING" or "QUIT";
     }
 }
