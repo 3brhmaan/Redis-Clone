@@ -35,6 +35,7 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new SUBSCRIBECommand(context));
     context.CommandContainer.Register(() => new PUBLISHCommand(context));
     context.CommandContainer.Register(() => new UNSUBSCRIBECommand(context));
+    context.CommandContainer.Register(() => new ZADDCommand(context));
 }
 
 
