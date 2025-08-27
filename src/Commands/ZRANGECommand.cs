@@ -19,20 +19,33 @@ public class ZRANGECommand : RedisCommand
             return "*0\r\n";
 
         var redisValue = storage.Get(key) as RedisSortedSet;
+        var count = redisValue.Set.Count;
 
-        if(startIdx >= redisValue.Set.Count || startIdx > lastIdx)
+        if (startIdx < 0)
+        {
+            startIdx = Math.Max(0 , count + startIdx);
+        }
+
+        if (lastIdx < 0)
+        {
+            lastIdx = Math.Max(0 , count + lastIdx);
+        }
+
+        if (lastIdx >= count)
+        {
+            lastIdx = count - 1;
+        }
+
+        if (startIdx >= count || startIdx > lastIdx)
             return "*0\r\n";
-
-        if(lastIdx >= redisValue.Set.Count)
-            lastIdx = redisValue.Set.Count - 1;
 
         var result = new StringBuilder();
         result.Append($"*{lastIdx - startIdx + 1}\r\n");
 
         int idx = 0;
-        foreach(var item in redisValue.Set)
+        foreach (var item in redisValue.Set)
         {
-            if(idx >= startIdx && idx <= lastIdx)
+            if (idx >= startIdx && idx <= lastIdx)
             {
                 result.Append($"${item.value.Length}\r\n{item.value}\r\n");
             }
