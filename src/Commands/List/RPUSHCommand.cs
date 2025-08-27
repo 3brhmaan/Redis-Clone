@@ -1,0 +1,37 @@
+﻿using codecrafters_redis.src.Commands.Base;
+using codecrafters_redis.src.Core;
+using codecrafters_redis.src.Storage.Values;
+
+namespace codecrafters_redis.src.Commands.List;
+public class RPUSHCommand : RedisCommand
+{
+    public override string Name => "RPUSH";
+    public RPUSHCommand(IServerContext serverContext) 
+        : base(serverContext) { }
+
+    public override string Execute(string[] arguments)
+    {
+        var key = arguments[0];
+        var values = arguments.Skip(1).ToList();
+
+        var redisValue = new RedisList();
+
+        var keyLock = lockManager.GetLock(key);
+        lock (keyLock)
+        {
+
+            if (!storage.ContainsKey(key))
+                redisValue.Values = new();
+            else
+                redisValue = storage.Get(key) as RedisList;
+
+            redisValue!.Values!.AddRange(values);
+
+            storage.Set(key , redisValue);
+
+            lockManager.SignalKey(keyLock);
+
+            return $":{(storage.Get(key) as RedisList)!.Values!.Count}\r\n";
+        }
+    }
+}
