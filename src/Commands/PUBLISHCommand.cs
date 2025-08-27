@@ -1,4 +1,5 @@
 ﻿using codecrafters_redis.src.Core;
+using System.Text;
 
 namespace codecrafters_redis.src.Commands;
 public class PUBLISHCommand : RedisCommand
@@ -13,6 +14,13 @@ public class PUBLISHCommand : RedisCommand
         var message = arguments[1];
 
         var channelSockets = _serverContext.SubscriptionManager.GetChannelSockts(channel);
+
+        var response = $"*3\r\n$7\r\nmessage\r\n${channel.Length}\r\n{channel}\r\n${message.Length}\r\n{message}\r\n";
+
+        foreach(var socket in channelSockets)
+        {
+            socket.Send(Encoding.UTF8.GetBytes(response));
+        }
 
         return $":{channelSockets.Count}\r\n";
     }
