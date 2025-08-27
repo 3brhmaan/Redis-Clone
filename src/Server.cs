@@ -40,6 +40,7 @@ void RegisterCommands(IServerContext context)
     context.CommandContainer.Register(() => new ZRANGECommand(context));
     context.CommandContainer.Register(() => new ZCARDCommand(context));
     context.CommandContainer.Register(() => new ZSCORECommand(context));
+    context.CommandContainer.Register(() => new ZREMCommand(context));
 }
 
 
