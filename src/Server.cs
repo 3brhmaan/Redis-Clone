@@ -3,6 +3,7 @@ using codecrafters_redis.src.Commands;
 using codecrafters_redis.src.Core;
 using codecrafters_redis.src.Data.Storage;
 using codecrafters_redis.src.Locking;
+using codecrafters_redis.src.PubSub;
 
 
 void RegisterCommands(IServerContext context)
@@ -45,7 +46,8 @@ if (!string.IsNullOrEmpty(configuration.RDBdire))
 var storage = new RedisStorage();
 var lockManager = new KeyLockManager();
 var commandContainer = new CommandContainer();
-var commandExecutor = new CommandExecutor(commandContainer);
+var subscriptionManager = new SubscriptionManager();
+var commandExecutor = new CommandExecutor(commandContainer, subscriptionManager);
 
 
 var serverContext = new ServerContext(
@@ -53,7 +55,8 @@ var serverContext = new ServerContext(
     storage ,
     lockManager,
     commandContainer,
-    commandExecutor
+    commandExecutor,
+    subscriptionManager
 );
 
 RegisterCommands(serverContext);

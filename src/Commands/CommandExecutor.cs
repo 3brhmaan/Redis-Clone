@@ -1,5 +1,6 @@
 ﻿using codecrafters_redis.src.Core;
 using codecrafters_redis.src.Parsing;
+using codecrafters_redis.src.PubSub;
 using codecrafters_redis.src.Transactions;
 
 namespace codecrafters_redis.src.Commands;
@@ -8,21 +9,26 @@ namespace codecrafters_redis.src.Commands;
 public class CommandExecutor
 {
     private readonly CommandContainer container;
+    private readonly SubscriptionManager subscriptionManager;
     private readonly TransactionManager transactionManager;
 
-    public CommandExecutor(CommandContainer container)
+    public CommandExecutor(CommandContainer container, SubscriptionManager subscriptionManager)
     {
         transactionManager = TransactionManager.Instance;
         this.container = container;
+        this.subscriptionManager = subscriptionManager;
     }
     public string Execute(string strCommand , string clientId)
     {
-        //Console.WriteLine($"Parsing: {request}");
         var commandParts = RedisProtocolParser.Parse(strCommand);
 
         var commandName = commandParts[0];
         var arguments = commandParts.Skip(1).ToArray();
 
+        if(commandName == "SUBSCRIBE")
+        {
+            subscriptionManager.SetCurrentClient(clientId);
+        }
 
         if (commandName == "MULTI")
         {

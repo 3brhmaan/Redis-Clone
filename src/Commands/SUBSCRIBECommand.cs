@@ -11,6 +11,8 @@ public class SUBSCRIBECommand : RedisCommand
     {
         var channelName = arguments[0];
 
-        return $"*3\r\n$9\r\nsubscribe\r\n${channelName.Length}\r\n{channelName}\r\n:1\r\n";
+        var channelsCount = _serverContext.SubscriptionManager.Subscribe(channelName);
+
+        return $"*3\r\n$9\r\nsubscribe\r\n${channelName.Length}\r\n{channelName}\r\n:{channelsCount}\r\n";
     }
 }
