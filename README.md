@@ -17,7 +17,7 @@ This project was developed following CodeCrafters' Redis implementation challeng
 - [📁 Project Structure](#-project-structure)
 - [🧪 Testing](#-testing)
 - [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+- [🙏 Acknowledgments](#-Acknowledgments)
 
 ## 🎯 Project Overview
 
